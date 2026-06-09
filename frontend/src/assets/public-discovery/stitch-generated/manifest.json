@@ -1,0 +1,106 @@
+{
+  "generatedAt": "2026-05-24T17:40:48.097Z",
+  "source": "Stitch HTML image URLs from .stitch/designs",
+  "outputDir": "src/assets/public-discovery/stitch-generated/webp",
+  "screens": {
+    "home": [
+      {
+        "fileName": "home-01.webp",
+        "path": "src/assets/public-discovery/stitch-generated/webp/home-01.webp",
+        "width": 512,
+        "height": 293,
+        "sourceUrl": "https://lh3.googleusercontent.com/aida/ADBb0uhDkGn6XmKiJ2tcnyn0m956__nit5N5F2g7Od1FLIZXX7oZcgUif24Tuceiehz0no9Sxh-Czo7kcVJhp6CHYBTq-ZUbYDaqF5enteIuknJ-JphKC21QgT81I9uHlrB86LDHhI3hYG8vsQmvXFVJq0zzhcrDcTZLdVijNY9oPAFHXiKsNlAVso_uUHlvGKpUWmh62v5GGvmod8gN-VmFTQBlU2BLKTPqs9fyqeqFgdHmp75hEwmi30xmHY4"
+      }
+    ],
+    "treatments-listing": [
+      {
+        "fileName": "treatments-listing-01.webp",
+        "path": "src/assets/public-discovery/stitch-generated/webp/treatments-listing-01.webp",
+        "width": 512,
+        "height": 512,
+        "sourceUrl": "https://lh3.googleusercontent.com/aida-public/AB6AXuA5OM5IdazSQjJP12MzUAHkoeBqcFQAcGuFDzWRLQcoOqmb_NCqcOpIKe_vcYyhg_39IraVWbZmqvREX6d_O8v4_D8OmCp3e85BmCRVwxo-NeQU0RZjXoAYGL-R7U7YoijPIS1OZc2o_xFsQ3f9wqbQlwb1LDnWg2JZArjV7zDdo2m7jrR4lchVlVDmwpVYtUmsvvfd2DW0bps_mXmdh9-AAlrZvX8y2ws-HMZpHnRiWmMvxcofzuhe4E3lJKeGb7dtFJxVkug4zn0"
+      },
+      {
+        "fileName": "treatments-listing-02.webp",
+        "path": "src/assets/public-discovery/stitch-generated/webp/treatments-listing-02.webp",
+        "width": 512,
+        "height": 512,
+        "sourceUrl": "https://lh3.googleusercontent.com/aida-public/AB6AXuDlW8MXgzhU9j3SogrYvDZ7BOg1azf1F-EIhDJ3l3owoMHitxuPiJ7nqMFXvrJ9D9_uzbqSdpsC9YoTPo4Dp-_4F1maOxTqJFyHei7k05zCq35fPBq0EXozC_cNYYjWZzOfRDI85uI1FuuT8d2gT6bccphHbO1OiW6VeMtxE6SNApNGjoFsanZZnk8lBjAwW7B_j7v4oyQDH9Sldvv1bp8dJRaaZLEkUlYzdE432djv8Hx88ozdwRKurFlxMXpSU0--IauEIl_8bb4"
+      },
+      {
+        "fileName": "treatments-listing-03.webp",
+        "path": "src/assets/public-discovery/stitch-generated/webp/treatments-listing-03.webp",
+        "width": 512,
+        "height": 512,
+        "sourceUrl": "https://lh3.googleusercontent.com/aida-public/AB6AXuBU4nQH2M-c5qsxPTNKQs9WBRPhr6uJ1XK8ofSGWtEAwF-AVYk1a0KliA9nmOXXGTzNonasz1u-MpFiwlcl4BfxNtAwYdaOSOKFRFbkqoxRct9LGiIZqWcOAHjjUns3ipYSlSiOTz0HJaswms58ZFP4hNeZtvmICUny5e7lXgM2MY4dUQ-USQo9oyy95w_xzqxg5Xgk8eBiFPpH_-ELS2TTnazGXqyVukq1FjqJkKC6Y3BhbPiZeEWaMFdHKSYo1XCu5tqa6VTwTdc"
+      },
+      {
+        "fileName": "treatments-listing-04.webp",
+        "path": "src/assets/public-discovery/stitch-generated/webp/treatments-listing-04.webp",
+        "width": 512,
+        "height": 512,
+        "sourceUrl": "https://lh3.googleusercontent.com/aida-public/AB6AXuDXTKfpxzmw4qFCsFp5hjB-A8Ak46UlaQCZ3jd5QDXkU-lSLvq4RV9T11qI4TZkJfZ3-5B-IO1LXRnNx7RKrF1tHY8SN8fIpx-60jgINpiJ9JtuRHNNuVfbgRELiCzhlqzGqEd0FogUt3zTy5Wmsb23fYzWwyvCFKS6IZDXqwBvlejFqZkOOCkSF--NMWbn72cysLz9zsL_PEOO2qUiTzcC5BtlUHCm99y5wf1af7XyPhbG-5OrlHwR1NAvFyIvTuExwsAaEGskKlM"
+      }
+    ],
+    "treatment-detail": [
+      {
+        "fileName": "home-01.webp",
+        "path": "src/assets/public-discovery/stitch-generated/webp/home-01.webp",
+        "width": 512,
+        "height": 293,
+        "sourceUrl": "https://lh3.googleusercontent.com/aida/ADBb0uhDkGn6XmKiJ2tcnyn0m956__nit5N5F2g7Od1FLIZXX7oZcgUif24Tuceiehz0no9Sxh-Czo7kcVJhp6CHYBTq-ZUbYDaqF5enteIuknJ-JphKC21QgT81I9uHlrB86LDHhI3hYG8vsQmvXFVJq0zzhcrDcTZLdVijNY9oPAFHXiKsNlAVso_uUHlvGKpUWmh62v5GGvmod8gN-VmFTQBlU2BLKTPqs9fyqeqFgdHmp75hEwmi30xmHY4"
+      },
+      {
+        "fileName": "treatment-detail-01.webp",
+        "path": "src/assets/public-discovery/stitch-generated/webp/treatment-detail-01.webp",
+        "width": 512,
+        "height": 512,
+        "sourceUrl": "https://lh3.googleusercontent.com/aida-public/AB6AXuDzIoFsTq6UjXhnzkPyBQvlCLs5hNBCKMUX1uCqULRq9XpR6S8MX3I86BsfhCRZWKjYSbhzzKtOIg70KKXgy5fVVb1m86VOwtlNKreACXuNkvq7ATu_Eib4wYSc-wogCbqn0lsuypzvzJH75KCV-Yc6dgW6zqL0NPUdsvW28qwX0xe-6gMwo327bCey5DAHTri8gUjmShcUSnXUNHMqXIbfYjwU4hYlJVbKsbMRmGZ2lrvGmwXfAgWx32BFeS87ppNS7-r4726UBn0"
+      },
+      {
+        "fileName": "treatment-detail-02.webp",
+        "path": "src/assets/public-discovery/stitch-generated/webp/treatment-detail-02.webp",
+        "width": 512,
+        "height": 512,
+        "sourceUrl": "https://lh3.googleusercontent.com/aida-public/AB6AXuAvaaF8hTEMOs73xPcCkIQk8g1OfJceXOWeu5L6ineqL79fj8aU7OoZXsPFH9pTFhkgDFUJ2QlbbweXnsImfmNgVRxisdsn1BJ4jJ0IFgAfWPKDkfI3WcayFw2OM3YLRrY-RsauenD2rQIydrkGUdLTsDHDl0LT6gNKG9b8E_UHo0EoNjX4lAtyyH13sS70BcE9yOB8jbxYnlGzroeWpHysM9diz-oZaDQTIPddIF6zeD_gEuxYH8Si_MhgQpMlXnHCO0KO93EB_Pw"
+      },
+      {
+        "fileName": "treatment-detail-03.webp",
+        "path": "src/assets/public-discovery/stitch-generated/webp/treatment-detail-03.webp",
+        "width": 512,
+        "height": 512,
+        "sourceUrl": "https://lh3.googleusercontent.com/aida-public/AB6AXuBZrVqmdKYWykbKAj-nJs3Xd6doE1SikpDIWY6MNMzWBVqHcjwzTG2Zw23S4ezFHhGwgjfRWt61oL80sVluzWx-Fv0XFsb2mAkOQ-30pZnxjWSDN-EiT9RaGV-5GznfI6NSOYSJiyUn58LrOaQc477BC2eA5uchceVbQHSl9eQm0labQ533YJxUMSQ1izQLpmXGplmxl0yVJNRIfK2y4l0QjUsGf7f6ikVK_tFXNOejnjf_sCfN344KqvqNli71fUrXBJzjAQAmgUQ"
+      },
+      {
+        "fileName": "treatment-detail-04.webp",
+        "path": "src/assets/public-discovery/stitch-generated/webp/treatment-detail-04.webp",
+        "width": 512,
+        "height": 512,
+        "sourceUrl": "https://lh3.googleusercontent.com/aida-public/AB6AXuDxrIpvBGLXUFOvHdy-hBullVEGfv3tEdF5-qXT5xsqztT9gunlVTcy30_5yoh_-D6pTs7YYHATq7K1ipeppqCZ6rbF3uoLJha1ANA6jP2f4yM9xhn6rmztyyMj-zdUVfD2lbsBV5o-YFMOwmk-JK5xMJUjY501aP-7k7dCy-8_oGhHWu3Fazc0nrj4e6jlOzjQ_9IZiQFgaED3VNSDdLIBZgTWFZBTZ_CCWThl3uKQdZNkHS2SGBZ4ge-QCfoA8eA1D8uVsWyGXoo"
+      },
+      {
+        "fileName": "treatment-detail-05.webp",
+        "path": "src/assets/public-discovery/stitch-generated/webp/treatment-detail-05.webp",
+        "width": 512,
+        "height": 512,
+        "sourceUrl": "https://lh3.googleusercontent.com/aida-public/AB6AXuCUzQSzRCo4iSFuZi7KxFAAwRu1I9TUphxWkibAPsqDsmaCafa7W49aAcWsWYEeam1u-N7vzzGCDCmHS3s-T-QDipQcSZVcsN6lca6X7f-eDX0HDFPhIJFNrweiYDLi7q2wRp93Ap3V4TxpWlzrplPoptqWSmZNE0N_R731OKcUBdp1xgO45H3Los_VK6L3GZmU6437L5nvThpmc043AAV2Nk1xzX90TpDjeAp56CTVIwNYg4DmFXUsfe63uIOhNBhxd1ntpNQH0iM"
+      }
+    ],
+    "therapist-detail": [
+      {
+        "fileName": "therapist-detail-01.webp",
+        "path": "src/assets/public-discovery/stitch-generated/webp/therapist-detail-01.webp",
+        "width": 512,
+        "height": 512,
+        "sourceUrl": "https://lh3.googleusercontent.com/aida-public/AB6AXuBVBUE-m6Lg1b2DiJhgbiWt4AVDW-g2T3rNLokkhytGFzD6Nsjvo5Ao2Vs69S0AnYJnX_iQRLnWwYQ0V7ghG1mZ8DO3l8kCX9hIKUbqsbAGxsQNag4IVzT6tUShoFHmmjqSnPxnENaDh96yasdd20UyBRvRik0F0-PDJ0S9HECHVT03M63jykCPr6a-diIgYQeqFL854A20Rx7TSbXqkvWPuiNdXrCclCBQcbEwkQkDy4d9S-41-h3lsT8d-LqGHFMG4IRTGbt9zUQ"
+      },
+      {
+        "fileName": "therapist-detail-02.webp",
+        "path": "src/assets/public-discovery/stitch-generated/webp/therapist-detail-02.webp",
+        "width": 512,
+        "height": 512,
+        "sourceUrl": "https://lh3.googleusercontent.com/aida-public/AB6AXuBcyb0QgiZkx8vaLJlpcN05VDIYi3qtEs70GHQCo2ZAUzMDPDI9746yy6x_AjlBOBRBi1_9oQKW5s0qyA-lHUX8K5nmfmMf5uyL2TTBnyGxciU88AgwKGQ2No6Tt47uNhU978HXfD40f8JOfC9yZrEqMo2H-_RqBHu-iiOHDOnjZXT9kZvMQeGQnUTr0Rmal05L3AbVj-YeRgwbIE09gstGBndqKOAqVaSDFehs-DixEIFChHfvY_7Q6sD8w365lV_BpTYHGhO4pbk"
+      }
+    ]
+  }
+}

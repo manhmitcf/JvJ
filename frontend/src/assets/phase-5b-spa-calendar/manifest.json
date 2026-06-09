@@ -1,0 +1,109 @@
+{
+  "generatedAt": "2026-06-01",
+  "source": ".stitch/designs/phase-5b/*.html",
+  "note": "Ảnh content do Stitch generate cho spa/gallery/calendar, không phải screenshot giao diện nguyên page.",
+  "skipped": [
+    {
+      "page": "spa-detail.html",
+      "alt": "User profile",
+      "dataAlt": "",
+      "src": "https://lh3.googleusercontent.com/aida-public/AB6AXuDaERI2gFYO64gUQIedV0Or65dXLjI8GiQ_B85Ak5qfcivRyPeDkVnhPBg-4ilGwpxxXl7Z2Tmks-0_mteqnnSAGPoZ3DGigBtRDLXGg_mNP7dMzlMSh_-Poh4cWvu3MYTgcNLD2smWKb8gaqW_67prcJYX60uLO64f7w43AcJ36TiIoW0VVb-b2PJSlR3r7KQgf15I2UK-uO7DXu6tFNadcIpWVQiM2JKuLXE-hVYmlXoZ4E7RWJ8cXIYfmZjuzujK9SgDtZmpAOk"
+    },
+    {
+      "page": "customer-calendar.html",
+      "alt": "Customer avatar",
+      "dataAlt": "A professional close-up portrait of a friendly woman in her late 20s with a warm smile, set against a soft, bright blurred interior background. The lighting is high-key and natural, emphasizing a clean and professional wellness aesthetic. The color palette is composed of soft teals and neutral whites, matching the serene and trustworthy mood of a high-end wellness app.",
+      "src": "https://lh3.googleusercontent.com/aida-public/AB6AXuDgdIycO1Qf732rYv9CSJKU9RzumEF3yKmfjzaz-ML2U-CnhKBlAh_XeD1PICfg1CAPuwSSGUC-yP0INL9OMoh6MT8d7yK59-icIBeeo3Id5YDz6_M-vuhsxU-o9vWs-jHQmwPRBGflViyycyu8JhWm41-nqnn3v-uUn1nKtHPvTe8QNJbabNmXpqURSRZ2Fax0wvYFHeDVE7YGyIKG0zWwRVIc-c-_TuxMiJaSusjAHoCAm6CFnG5XVJrcxswuthtMLgygtws1yFs"
+    }
+  ],
+  "images": [
+    {
+      "page": "spa-listing.html",
+      "alt": "Oceanic Spa &amp; Wellness",
+      "dataAlt": "A luxurious modern spa interior in Da Nang with large windows overlooking the ocean. The room is decorated with minimalist wood furniture, soft white linens, and lush indoor plants. The lighting is bright and warm, creating a serene and professional wellness atmosphere aligned with the teal and mint color palette.",
+      "path": "src/assets/phase-5b-spa-calendar/spa-card-01.webp",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "page": "spa-listing.html",
+      "alt": "An Nhiên Therapies",
+      "dataAlt": "A tranquil massage room designed with traditional Vietnamese aesthetic, featuring bamboo accents and soft silk drapes. The lighting is dim and golden, focused on a neatly made massage table with fresh flowers. The scene evokes a feeling of deep relaxation and therapeutic home-care wellness.",
+      "path": "src/assets/phase-5b-spa-calendar/spa-card-02.webp",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "page": "spa-listing.html",
+      "alt": "Green Leaf Retreat",
+      "dataAlt": "A modern wellness clinic entrance in Da Nang with a botanical theme, featuring a large living moss wall and clean white marble floors. The space is illuminated by soft, indirect LED lighting, creating a bright and hygienic medical-grade wellness environment. The brand colors of deep teal and sage are subtly integrated into the furniture.",
+      "path": "src/assets/phase-5b-spa-calendar/spa-card-03.webp",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "page": "spa-listing.html",
+      "alt": "Lotus Healing Spa",
+      "dataAlt": "A Zen-style spa reception area in Da Nang with natural stone walls and a small water feature. The lighting is diffused and natural, highlighting a clean and airy layout. The environment is designed for calm and restoration, featuring high-end spa equipment and professional therapists in teal uniforms.",
+      "path": "src/assets/phase-5b-spa-calendar/spa-card-04.webp",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "page": "spa-listing.html",
+      "alt": "Mộc Spa Da Nang",
+      "dataAlt": "A rustic yet elegant spa room in central Da Nang featuring wooden floorboards and warm textile decorations. A professional massage table is set with soft mint-colored towels. Large tropical plants in clay pots provide a fresh, botanical feel, illuminated by soft morning sunlight filtering through sheer curtains.",
+      "path": "src/assets/phase-5b-spa-calendar/spa-card-05.webp",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "page": "spa-listing.html",
+      "alt": "Riverside Therapy",
+      "dataAlt": "A bright, minimalist physiotherapy and spa clinic overlooking the Han River in Da Nang. The space features clean clinical lines but with a warm, welcoming vibe through the use of soft therapeutic lighting and comfortable lounge chairs. The design is airy and uncluttered, promoting a sense of peace and recovery.",
+      "path": "src/assets/phase-5b-spa-calendar/spa-card-06.webp",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "page": "spa-detail.html",
+      "alt": "A serene spa treatment room with high-key soft natural lighting and minimalist wooden furniture. The atmosphere is peaceful and clean, featuring soft teal and mint color accents. Lush green indoor plants are placed in the corners, adding a botanical feel to the professional home-care wellness setting.",
+      "dataAlt": "A serene spa treatment room with high-key soft natural lighting and minimalist wooden furniture. The atmosphere is peaceful and clean, featuring soft teal and mint color accents. Lush green indoor plants are placed in the corners, adding a botanical feel to the professional home-care wellness setting.",
+      "path": "src/assets/phase-5b-spa-calendar/spa-detail-02.webp",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "page": "spa-detail.html",
+      "alt": "Close up of a professional massage setup including stacked clean teal towels and aromatic essential oil diffusers. The lighting is warm and inviting, highlighting the pristine white surfaces and soft mint green walls. This aesthetic represents a modern wellness center that focuses on calming and therapeutic home care services.",
+      "dataAlt": "Close up of a professional massage setup including stacked clean teal towels and aromatic essential oil diffusers. The lighting is warm and inviting, highlighting the pristine white surfaces and soft mint green walls. This aesthetic represents a modern wellness center that focuses on calming and therapeutic home care services.",
+      "path": "src/assets/phase-5b-spa-calendar/spa-detail-03.webp",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "page": "spa-detail.html",
+      "alt": "A wide view of a luxury spa relaxation lounge with expansive windows overlooking a lush garden. The interior design features warm wooden floors, soft fabric seating in neutral tones, and botanical decorations. The natural light creates a bright, airy, and calming atmosphere suitable for a premium wellness brand.",
+      "dataAlt": "A wide view of a luxury spa relaxation lounge with expansive windows overlooking a lush garden. The interior design features warm wooden floors, soft fabric seating in neutral tones, and botanical decorations. The natural light creates a bright, airy, and calming atmosphere suitable for a premium wellness brand.",
+      "path": "src/assets/phase-5b-spa-calendar/spa-detail-04.webp",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "page": "spa-detail.html",
+      "alt": "A clean, minimalist digital map of Da Nang city coastline focused on the Son Tra peninsula area. The map uses a soft wellness color palette with teal highlights for the spa location. The artistic style is clean and professional, matching the overall JvJ Wellness brand identity for a high-end medical home care platform.",
+      "dataAlt": "A clean, minimalist digital map of Da Nang city coastline focused on the Son Tra peninsula area. The map uses a soft wellness color palette with teal highlights for the spa location. The artistic style is clean and professional, matching the overall JvJ Wellness brand identity for a high-end medical home care platform.",
+      "path": "src/assets/phase-5b-spa-calendar/spa-detail-05.webp",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "page": "customer-calendar.html",
+      "alt": "Wellness relaxation",
+      "dataAlt": "A serene close-up of a massage therapist's hands applying essential oils to a client's back in a bright, modern wellness studio. The space is filled with soft natural light filtering through white curtains, creating a calm and airy atmosphere. The color palette features soft teals, warm whites, and light wood textures, perfectly aligning with a professional home-care massage service brand.",
+      "path": "src/assets/phase-5b-spa-calendar/calendar-02.webp",
+      "width": 512,
+      "height": 512
+    }
+  ]
+}

@@ -1,0 +1,93 @@
+# ============================================
+# Claude Code - Worktree & Agent Isolation
+# ============================================
+.claude/worktrees/
+.worktrees/
+
+# ============================================
+# Environment & Secrets
+# ============================================
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.cert
+
+# ============================================
+# Dependencies
+# ============================================
+frontend/node_modules/
+backend/node_modules/
+vendor/
+.venv/
+venv/
+__pycache__/
+*.pyc
+
+# ============================================
+# Build & Output
+# ============================================
+frontend/dist/
+frontend/.vite/
+backend/dist/
+backend/build/
+frontend/coverage/
+backend/staticfiles/
+
+# ============================================
+# Docker
+# ============================================
+# Giữ lại .dockerignore trong repo để Docker build sử dụng
+# *.dockerignore
+
+# ============================================
+# Database & Media
+# ============================================
+backend/db.sqlite3
+backend/db.sqlite3-journal
+backend/media/
+media-uploads/
+
+# ============================================
+# IDE & OS
+# ============================================
+.vscode/settings.json
+.idea/
+*.swp
+*.swo
+*~
+Thumbs.db
+.DS_Store
+
+# ============================================
+# Logs & Cache
+# ============================================
+*.log
+logs/
+.cache/
+.turbo/
+.eslintcache
+
+# ============================================
+# Python specific
+# ============================================
+**/__pycache__/
+**/*.pyc
+**/*.pyo
+**/*.egg-info/
+**/venv/
+**/.venv/
+backend/.env
+backend/.env.local
+backend/pytest-results.xml
+backend/.coverage
+backend/htmlcov/
+backend/.pytest_cache/
+
+# ============================================
+# Frontend specific
+# ============================================
+frontend/.env.local
+frontend/.env.*.local
+frontend/.stitch/

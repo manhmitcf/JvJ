@@ -1,0 +1,53 @@
+# Dependencies (container sẽ build riêng)
+node_modules/
+# package-lock.json - CẦN file này cho npm ci!
+
+# Build outputs (không cần trong dev)
+dist/
+.vite/
+
+# Environment files (sẽ được truyền qua Docker)
+.env.local
+.env.*.local
+.env.production
+
+# Git (không cần trong container)
+.git/
+.gitignore
+.gitattributes
+
+# Docker files (không cần trong image)
+Dockerfile
+.dockerignore
+
+# Claude Code
+.claude/
+
+# IDE & Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Stitch artifacts (design files, không cần runtime)
+.stitch/
+
+# Testing
+coverage/
+.eslintcache
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Documentation
+README.md
+DESIGN.md
+docs/

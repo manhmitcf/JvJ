@@ -1,0 +1,65 @@
+# Python cache & compiled files
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.pyc
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# Database (use Supabase, không cần local DB)
+db.sqlite3
+db.sqlite3-journal
+
+# Django static & media (mounted volumes trong Docker)
+staticfiles/
+media/
+
+# Environment files (sẽ được truyền qua Docker)
+.env
+.env.*
+!.env.example
+
+# Testing
+.coverage
+htmlcov/
+.pytest_cache/
+.tox/
+pytest-results.xml
+
+# Git (không cần trong container)
+.git/
+.gitignore
+.gitattributes
+
+# Docker files (không cần trong image)
+Dockerfile
+.dockerignore
+# docker-entrypoint.sh - CẦN file này để container start được!
+
+# IDE & Editor
+.DS_Store
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# Claude Code
+.claude/
+
+# Logs
+*.log
+
+# Build artifacts
+dist/
+build/
+*.egg-info/
+
+# Documentation
+README.md
+CLAUDE.md
+docs/

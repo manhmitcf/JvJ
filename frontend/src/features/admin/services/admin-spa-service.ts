@@ -1,0 +1,89 @@
+import { apiClient } from "@/lib/api-client";
+import { type Spa, type SpaFormInput } from "@/types/spa";
+
+export type AdminSpaFilters = {
+  status?: Spa["status"] | "all";
+  district?: string;
+  keyword?: string;
+};
+
+type SpaDto = {
+  id: string;
+  name: string;
+  address: string;
+  district: string;
+  latitude?: number;
+  longitude?: number;
+  phone: string;
+  email: string;
+  open_time: string;
+  close_time: string;
+  description?: string;
+  status: Spa["status"];
+  image_urls: string[];
+  linked_treatment_count?: number;
+};
+
+function mapSpa(s: SpaDto): Spa {
+  return {
+    id: s.id,
+    name: s.name,
+    address: s.address,
+    district: s.district,
+    latitude: s.latitude,
+    longitude: s.longitude,
+    phone: s.phone,
+    email: s.email,
+    openTime: s.open_time,
+    closeTime: s.close_time,
+    description: s.description,
+    status: s.status,
+    imageUrls: s.image_urls,
+    linkedTreatmentCount: s.linked_treatment_count ?? 0,
+  };
+}
+
+export async function getAdminSpas(_filters: AdminSpaFilters = {}): Promise<Spa[]> {
+  const res = await apiClient.get<{ results: SpaDto[] }>("/admin/spas/");
+  return (res.data.results ?? []).map(mapSpa);
+}
+
+export async function createSpa(data: SpaFormInput): Promise<Spa> {
+  const res = await apiClient.post<SpaDto>("/admin/spas/", {
+    name: data.name,
+    address: data.address,
+    district: data.district,
+    latitude: data.latitude,
+    longitude: data.longitude,
+    phone: data.phone,
+    email: data.email,
+    open_time: data.openTime,
+    close_time: data.closeTime,
+    description: data.description,
+    image_urls: data.imageUrls,
+  });
+  return mapSpa(res.data);
+}
+
+export async function updateSpa(spaId: string, updates: Partial<SpaFormInput>): Promise<Spa> {
+  const body: Record<string, unknown> = {};
+  if (updates.name !== undefined) body.name = updates.name;
+  if (updates.address !== undefined) body.address = updates.address;
+  if (updates.district !== undefined) body.district = updates.district;
+  if (updates.latitude !== undefined) body.latitude = updates.latitude;
+  if (updates.longitude !== undefined) body.longitude = updates.longitude;
+  if (updates.phone !== undefined) body.phone = updates.phone;
+  if (updates.email !== undefined) body.email = updates.email;
+  if (updates.openTime !== undefined) body.open_time = updates.openTime;
+  if (updates.closeTime !== undefined) body.close_time = updates.closeTime;
+  if (updates.description !== undefined) body.description = updates.description;
+  if (updates.status !== undefined) body.status = updates.status;
+  if (updates.imageUrls !== undefined) body.image_urls = updates.imageUrls;
+
+  const res = await apiClient.put<SpaDto>(`/admin/spas/${spaId}/`, body);
+  return mapSpa(res.data);
+}
+
+export async function deleteSpa(spaId: string): Promise<void> {
+  await apiClient.delete(`/admin/spas/${spaId}/`);
+}
