@@ -603,6 +603,7 @@ export function TherapistProfilePage() {
   const { profile, fetchProfile, saveProfile, toggleOnline } = useProfileStore();
 
   const [uploadingPortrait, setUploadingPortrait] = useState(false);
+  const [uploadingCitizenId, setUploadingCitizenId] = useState<'front' | 'back' | null>(null);
   const [uploadError, setUploadError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -629,6 +630,42 @@ export function TherapistProfilePage() {
     }
   };
 
+  const handleCitizenIdFrontUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    setUploadingCitizenId('front');
+    setUploadError(null);
+    try {
+      const url = await uploadFile(file);
+      await saveProfile({ citizenIdFrontUrl: url });
+      event.target.value = "";
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Upload thất bại";
+      setUploadError(message);
+    } finally {
+      setUploadingCitizenId(null);
+    }
+  };
+
+  const handleCitizenIdBackUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    setUploadingCitizenId('back');
+    setUploadError(null);
+    try {
+      const url = await uploadFile(file);
+      await saveProfile({ citizenIdBackUrl: url });
+      event.target.value = "";
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Upload thất bại";
+      setUploadError(message);
+    } finally {
+      setUploadingCitizenId(null);
+    }
+  };
+
   // Profile data — use API data when available, fallback to hardcoded display values
   const therapistName = profile?.fullName || "Trần Hoài Nam";
   const therapistEmail = profile?.email || "nam.tran@jvjwellness.com";
@@ -640,35 +677,8 @@ export function TherapistProfilePage() {
   const completedBookings = profile?.completedBookings ?? 0;
   const certificateUrls = profile?.certificateUrls ?? [];
   const isOnline = profile?.isOnline ?? true;
-  const hasCitizenId = !!(profile?.citizenIdFrontUrl && profile?.citizenIdBackUrl);
 
   const serviceAreas = ["Hải Châu", "Thanh Khê", "Sơn Trà", "Ngũ Hành Sơn"];
-
-  // Calculate profile completion percentage
-  const completionFields = [
-    !!therapistName,
-    !!therapistPhone && !therapistPhone.includes("•••"),
-    !!therapistBio && therapistBio.length > 20,
-    certificateUrls.length > 0,
-  ];
-  const completionPercent = Math.round((completionFields.filter(Boolean).length / completionFields.length) * 100) || 86;
-
-  const documents = [
-    {
-      title: "CCCD / CMND",
-      hint: hasCitizenId ? "Đã tải lên" : "Chưa tải lên",
-      status: hasCitizenId ? "Đã có" : "Chưa có",
-      tone: hasCitizenId ? "teal" as const : "slate" as const,
-      icon: IdCard
-    },
-    {
-      title: "Chứng chỉ hành nghề",
-      hint: certificateUrls.length > 0 ? `${certificateUrls.length} file đã tải lên` : "Chưa tải lên",
-      status: certificateUrls.length > 0 ? "Đã có" : "Chưa có",
-      tone: certificateUrls.length > 0 ? "teal" as const : "slate" as const,
-      icon: FileText
-    },
-  ];
 
   return (
     <PageShell>
@@ -751,19 +761,67 @@ export function TherapistProfilePage() {
           <section className="rounded-[2rem] border border-botanical-border bg-white p-lg shadow-stitch-soft">
             <h2 className="mb-lg inline-flex items-center gap-sm text-xl font-black text-ink-primary"><ShieldCheck className="h-5 w-5 text-primary" /> Chứng chỉ & giấy tờ</h2>
             <div className="grid gap-md md:grid-cols-2">
-              {documents.map((doc) => {
-                const Icon = doc.icon;
-                return (
-                  <div key={doc.title} className="flex items-center gap-md rounded-3xl border border-botanical-border bg-warm-bg p-md">
-                    <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-soft-mint text-primary"><Icon className="h-5 w-5" /></div>
-                    <div className="min-w-0 flex-1">
-                      <p className="font-black text-ink-primary">{doc.title}</p>
-                      <p className="text-label-caption font-semibold text-sage-secondary">{doc.hint}</p>
-                    </div>
-                    <StatusBadge tone={doc.tone}>{doc.status}</StatusBadge>
-                  </div>
-                );
-              })}
+              {/* Citizen ID Front */}
+              <label className={`flex cursor-pointer items-center gap-md rounded-3xl border border-botanical-border bg-warm-bg p-md transition ${uploadingCitizenId === 'front' ? 'opacity-60' : 'hover:bg-soft-mint'}`}>
+                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-soft-mint text-primary">
+                  <IdCard className="h-5 w-5" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="font-black text-ink-primary">CCCD Mặt trước</p>
+                  <p className="text-label-caption font-semibold text-sage-secondary">
+                    {uploadingCitizenId === 'front' ? 'Đang tải...' : profile?.citizenIdFrontUrl ? 'Đã tải lên' : 'Chưa tải lên'}
+                  </p>
+                </div>
+                <StatusBadge tone={profile?.citizenIdFrontUrl ? "teal" : "slate"}>
+                  {profile?.citizenIdFrontUrl ? "Đã có" : "Chưa có"}
+                </StatusBadge>
+                <input
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp"
+                  onChange={handleCitizenIdFrontUpload}
+                  disabled={uploadingCitizenId !== null}
+                  className="sr-only"
+                />
+              </label>
+
+              {/* Citizen ID Back */}
+              <label className={`flex cursor-pointer items-center gap-md rounded-3xl border border-botanical-border bg-warm-bg p-md transition ${uploadingCitizenId === 'back' ? 'opacity-60' : 'hover:bg-soft-mint'}`}>
+                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-soft-mint text-primary">
+                  <IdCard className="h-5 w-5" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="font-black text-ink-primary">CCCD Mặt sau</p>
+                  <p className="text-label-caption font-semibold text-sage-secondary">
+                    {uploadingCitizenId === 'back' ? 'Đang tải...' : profile?.citizenIdBackUrl ? 'Đã tải lên' : 'Chưa tải lên'}
+                  </p>
+                </div>
+                <StatusBadge tone={profile?.citizenIdBackUrl ? "teal" : "slate"}>
+                  {profile?.citizenIdBackUrl ? "Đã có" : "Chưa có"}
+                </StatusBadge>
+                <input
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp"
+                  onChange={handleCitizenIdBackUpload}
+                  disabled={uploadingCitizenId !== null}
+                  className="sr-only"
+                />
+              </label>
+
+              {/* Certificates - keep existing static display for now */}
+              <div className="flex items-center gap-md rounded-3xl border border-botanical-border bg-warm-bg p-md">
+                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-soft-mint text-primary">
+                  <FileText className="h-5 w-5" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="font-black text-ink-primary">Chứng chỉ hành nghề</p>
+                  <p className="text-label-caption font-semibold text-sage-secondary">
+                    {certificateUrls.length > 0 ? `${certificateUrls.length} file đã tải lên` : 'Chưa tải lên'}
+                  </p>
+                </div>
+                <StatusBadge tone={certificateUrls.length > 0 ? "teal" : "slate"}>
+                  {certificateUrls.length > 0 ? "Đã có" : "Chưa có"}
+                </StatusBadge>
+              </div>
             </div>
           </section>
 

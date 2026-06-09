@@ -38,6 +38,8 @@ export type UpdateProfileInput = {
   bio?: string;
   years_of_experience?: number;
   specialties?: string[];
+  citizenIdFrontUrl?: string;
+  citizenIdBackUrl?: string;
 };
 
 export async function getTherapistProfile(): Promise<Therapist> {
@@ -54,6 +56,8 @@ export async function updateTherapistProfile(input: UpdateProfileInput): Promise
   if (input.bio !== undefined) body.bio = input.bio;
   if (input.years_of_experience !== undefined) body.years_of_experience = input.years_of_experience;
   if (input.specialties !== undefined) body.specialties = input.specialties;
+  if (input.citizenIdFrontUrl !== undefined) body.citizen_id_front_url = input.citizenIdFrontUrl;
+  if (input.citizenIdBackUrl !== undefined) body.citizen_id_back_url = input.citizenIdBackUrl;
 
   const dto = await apiFetch<TherapistProfileDto>("/therapists/profile/", {
     method: "PUT",
