@@ -91,3 +91,8 @@ backend/.pytest_cache/
 frontend/.env.local
 frontend/.env.*.local
 frontend/.stitch/
+
+# ============================================
+# Documentation (Superpowers)
+# ============================================
+docs/superpowers/
