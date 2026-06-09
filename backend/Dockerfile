@@ -26,7 +26,8 @@ RUN chmod +x /app/docker-entrypoint.sh
 
 # Tạo non-root user và chuyển ownership
 RUN useradd -m -u 1000 jvjuser && \
-    chown -R jvjuser:jvjuser /app
+    chown -R jvjuser:jvjuser /app && \
+    chown -R jvjuser:jvjuser /app/media
 
 # Expose port (optional, for documentation)
 EXPOSE 8000
