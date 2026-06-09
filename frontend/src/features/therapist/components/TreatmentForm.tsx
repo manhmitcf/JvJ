@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Upload, Trash2 } from "lucide-react";
+import { Trash2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { PrimaryButton, SecondaryButton, StatusBadge } from "./shared";
 import { FormSection } from "./TreatmentFormFields";
@@ -11,6 +11,8 @@ import {
 } from "../services/therapist-treatment-service";
 import { uploadFile } from "@/services/upload-service";
 import { useTreatmentStore } from "../stores/treatment-store";
+import { ImageUploadButton } from "@/components/ui/image-upload-button";
+import { ImagePreview } from "@/components/ui/image-preview";
 
 const initialForm: TreatmentFormInput = {
   name: "",
@@ -68,33 +70,6 @@ export function TreatmentForm({ treatmentId }: { treatmentId?: string }) {
 
   const update = (field: keyof TreatmentFormInput, value: string | number | boolean | string[]) => {
     setForm((current) => ({ ...current, [field]: value }));
-  };
-
-  const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const files = event.target.files;
-    if (!files || files.length === 0) return;
-
-    // Check total count
-    if (form.images.length + files.length > 5) {
-      setError("Tối đa 5 ảnh");
-      event.target.value = ""; // Reset input
-      return;
-    }
-
-    setUploading(true);
-    setError(null);
-    try {
-      const uploadPromises = Array.from(files).map(file => uploadFile(file));
-      const urls = await Promise.all(uploadPromises);
-      update("images", [...form.images, ...urls]);
-      event.target.value = ""; // Reset input sau khi upload thành công
-    } catch (err) {
-      setError("Tải ảnh lên thất bại. Vui lòng thử lại.");
-      console.error("Upload error:", err);
-      event.target.value = ""; // Reset input khi lỗi
-    } finally {
-      setUploading(false);
-    }
   };
 
   const removeImage = (index: number) => {
@@ -259,45 +234,28 @@ export function TreatmentForm({ treatmentId }: { treatmentId?: string }) {
               {form.images.length > 0 && (
                 <div className="grid grid-cols-2 gap-md md:grid-cols-3">
                   {form.images.map((url, index) => (
-                    <div key={index} className="relative overflow-hidden rounded-2xl border border-botanical-border bg-white">
-                      <img src={url} alt={`Ảnh ${index + 1}`} className="aspect-video w-full object-cover" />
-                      {index === 0 && (
-                        <div className="absolute left-2 top-2 rounded-full bg-primary px-2 py-0.5 text-xs font-black text-white">
-                          Ảnh chính
-                        </div>
-                      )}
-                      <button
-                        type="button"
-                        onClick={() => removeImage(index)}
-                        className="absolute right-2 top-2 flex h-7 w-7 items-center justify-center rounded-full bg-white/90 text-xs font-black text-red-600 shadow-sm hover:bg-white"
-                      >
-                        ✕
-                      </button>
-                    </div>
+                    <ImagePreview
+                      key={index}
+                      url={url}
+                      alt={`Ảnh ${index + 1}`}
+                      isPrimary={index === 0}
+                      onRemove={() => removeImage(index)}
+                    />
                   ))}
                 </div>
               )}
 
               {/* Upload button */}
               {form.images.length < 5 && (
-                <label className={`flex min-h-32 flex-col items-center justify-center rounded-[1.5rem] border-2 border-dashed border-botanical-border bg-warm-bg p-lg text-center transition ${uploading ? 'cursor-wait opacity-60' : 'cursor-pointer hover:border-primary hover:bg-soft-mint'}`}>
-                  <Upload className="h-8 w-8 text-primary" />
-                  <span className="mt-sm font-black text-ink-primary">
-                    {uploading ? "Đang tải lên..." : `Thêm ảnh (${form.images.length}/5)`}
-                  </span>
-                  <span className="mt-xs text-label-caption font-semibold text-sage-secondary">
-                    JPG, PNG, WebP · tối đa 5MB mỗi ảnh
-                  </span>
-                  <input
-                    type="file"
-                    accept="image/jpeg,image/png,image/webp"
-                    multiple
-                    onChange={handleImageUpload}
-                    disabled={uploading}
-                    className="hidden"
-                    key={form.images.length}
-                  />
-                </label>
+                <ImageUploadButton
+                  multiple
+                  maxFiles={5 - form.images.length}
+                  label={`Thêm ảnh (${form.images.length}/5)`}
+                  hint="JPG, PNG, WebP · tối đa 5MB mỗi ảnh"
+                  disabled={uploading}
+                  onUpload={(url) => update("images", [...form.images, url])}
+                  onError={(err) => setError(err)}
+                />
               )}
             </div>
           </FormSection>

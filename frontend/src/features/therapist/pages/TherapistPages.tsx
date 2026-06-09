@@ -30,24 +30,6 @@ import {
   XCircle,
 } from "lucide-react";
 import { Link, useParams, useNavigate } from "react-router-dom";
-import dashboardHero from "@/assets/therapist-dashboard/therapist-dashboard-home-image-1.webp";
-import dashboardCustomerA from "@/assets/therapist-dashboard/therapist-dashboard-home-image-2.webp";
-import dashboardCustomerB from "@/assets/therapist-dashboard/therapist-dashboard-home-image-3.webp";
-import treatmentImageA from "@/assets/therapist-dashboard/therapist-treatment-management-image-1.webp";
-import treatmentImageB from "@/assets/therapist-dashboard/therapist-treatment-management-image-2.webp";
-import treatmentImageC from "@/assets/therapist-dashboard/therapist-treatment-management-image-3.webp";
-import treatmentImageD from "@/assets/therapist-dashboard/therapist-treatment-management-image-4.webp";
-import treatmentImageE from "@/assets/therapist-dashboard/therapist-treatment-management-image-5.webp";
-import formPreviewImage from "@/assets/therapist-dashboard/therapist-treatment-form-image-1.webp";
-import formTherapistImage from "@/assets/therapist-dashboard/therapist-treatment-form-image-2.webp";
-import scheduleTherapistImage from "@/assets/therapist-dashboard/therapist-schedule-management-image-1.webp";
-import bookingImageA from "@/assets/therapist-dashboard/therapist-booking-management-image-1.webp";
-import bookingImageB from "@/assets/therapist-dashboard/therapist-booking-management-image-2.webp";
-import bookingImageC from "@/assets/therapist-dashboard/therapist-booking-management-image-3.webp";
-import bookingImageD from "@/assets/therapist-dashboard/therapist-booking-management-image-4.webp";
-import bookingImageE from "@/assets/therapist-dashboard/therapist-booking-management-image-5.webp";
-import profileAvatarImage from "@/assets/therapist-dashboard/therapist-profile-management-image-1.webp";
-import profilePreviewImage from "@/assets/therapist-dashboard/therapist-profile-management-image-3.webp";
 import { cn } from "@/utils/cn";
 import { BookingDetailDrawer } from "../components/BookingDetailDrawer";
 import { BookingRequestCard } from "../components/BookingRequestCard";
@@ -67,13 +49,10 @@ import { useProfileStore } from "../stores/profile-store";
 import { useScheduleStore } from "../stores/schedule-store";
 import { useTreatmentStore } from "../stores/treatment-store";
 import { useWalletStore } from "../stores/wallet-store";
+import { uploadFile } from "@/services/upload-service";
 
 const money = new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" });
 const moneyCompact = new Intl.NumberFormat("vi-VN", { notation: "compact", maximumFractionDigits: 1 });
-
-const treatmentImages = [treatmentImageA, treatmentImageB, treatmentImageC, treatmentImageD, treatmentImageE];
-
-const customerImages = [bookingImageA, bookingImageB, bookingImageC, bookingImageD, bookingImageE];
 
 function PageShell({ children }: { children: React.ReactNode }) {
   return <div className="mx-auto max-w-[1440px] space-y-xl pb-xl">{children}</div>;
@@ -253,7 +232,7 @@ export function TherapistTreatmentsPage() {
           <TreatmentCard
             key={treatment.id}
             treatment={treatment}
-            image={treatment.imageUrl || treatment.images?.[0] || treatmentImages[0]}
+            image={treatment.imageUrl || treatment.images?.[0]}
             onToggleAvailability={(item) => void updateTreatment(item.id, { isAvailable: !item.isAvailable })}
           />
         ))}
@@ -432,11 +411,10 @@ export function TherapistBookingsPage() {
               </p>
             </div>
           ) : (
-            pageBookings.map((booking, index) => (
+            pageBookings.map((booking) => (
               <BookingRequestCard
                 key={booking.id}
                 booking={booking}
-                image={customerImages[index % customerImages.length]}
                 customerName={getCustomerName(booking)}
                 treatmentName={getTreatmentName(booking)}
                 onApprove={(bookingId) => void approveBooking(bookingId)}
@@ -624,9 +602,94 @@ export function TherapistWalletPage() {
 export function TherapistProfilePage() {
   const { profile, fetchProfile, saveProfile, toggleOnline } = useProfileStore();
 
+  const [uploadingPortrait, setUploadingPortrait] = useState(false);
+  const [uploadingCitizenId, setUploadingCitizenId] = useState<'front' | 'back' | null>(null);
+  const [uploadingCertificate, setUploadingCertificate] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
+
   useEffect(() => {
     void fetchProfile();
   }, [fetchProfile]);
+
+  const handlePortraitUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    setUploadingPortrait(true);
+    setUploadError(null);
+    try {
+      const url = await uploadFile(file);
+      // Update profile với portrait URL mới
+      await saveProfile({ portraitUrl: url });
+      event.target.value = ""; // Reset input
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Upload thất bại";
+      setUploadError(message);
+      console.error("Portrait upload error:", error);
+    } finally {
+      setUploadingPortrait(false);
+    }
+  };
+
+  const handleCitizenIdFrontUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    setUploadingCitizenId('front');
+    setUploadError(null);
+    try {
+      const url = await uploadFile(file);
+      await saveProfile({ citizenIdFrontUrl: url });
+      event.target.value = "";
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Upload thất bại";
+      setUploadError(message);
+    } finally {
+      setUploadingCitizenId(null);
+    }
+  };
+
+  const handleCitizenIdBackUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    setUploadingCitizenId('back');
+    setUploadError(null);
+    try {
+      const url = await uploadFile(file);
+      await saveProfile({ citizenIdBackUrl: url });
+      event.target.value = "";
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Upload thất bại";
+      setUploadError(message);
+    } finally {
+      setUploadingCitizenId(null);
+    }
+  };
+
+  const handleCertificateUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = event.target.files;
+    if (!files || files.length === 0) return;
+
+    setUploadingCertificate(true);
+    setUploadError(null);
+    try {
+      const uploadPromises = Array.from(files).map(f => uploadFile(f));
+      const urls = await Promise.all(uploadPromises);
+
+      // Merge with existing certificates - get from profile state
+      const existingCertificates = profile?.certificateUrls ?? [];
+      const newCertificateUrls = [...existingCertificates, ...urls];
+      await saveProfile({ certificateUrls: newCertificateUrls });
+
+      event.target.value = "";
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Upload thất bại";
+      setUploadError(message);
+    } finally {
+      setUploadingCertificate(false);
+    }
+  };
 
   // Profile data — use API data when available, fallback to hardcoded display values
   const therapistName = profile?.fullName || "Trần Hoài Nam";
@@ -639,35 +702,8 @@ export function TherapistProfilePage() {
   const completedBookings = profile?.completedBookings ?? 0;
   const certificateUrls = profile?.certificateUrls ?? [];
   const isOnline = profile?.isOnline ?? true;
-  const hasCitizenId = !!(profile?.citizenIdFrontUrl && profile?.citizenIdBackUrl);
 
   const serviceAreas = ["Hải Châu", "Thanh Khê", "Sơn Trà", "Ngũ Hành Sơn"];
-
-  // Calculate profile completion percentage
-  const completionFields = [
-    !!therapistName,
-    !!therapistPhone && !therapistPhone.includes("•••"),
-    !!therapistBio && therapistBio.length > 20,
-    certificateUrls.length > 0,
-  ];
-  const completionPercent = Math.round((completionFields.filter(Boolean).length / completionFields.length) * 100) || 86;
-
-  const documents = [
-    {
-      title: "CCCD / CMND",
-      hint: hasCitizenId ? "Đã tải lên" : "Chưa tải lên",
-      status: hasCitizenId ? "Đã có" : "Chưa có",
-      tone: hasCitizenId ? "teal" as const : "slate" as const,
-      icon: IdCard
-    },
-    {
-      title: "Chứng chỉ hành nghề",
-      hint: certificateUrls.length > 0 ? `${certificateUrls.length} file đã tải lên` : "Chưa tải lên",
-      status: certificateUrls.length > 0 ? "Đã có" : "Chưa có",
-      tone: certificateUrls.length > 0 ? "teal" as const : "slate" as const,
-      icon: FileText
-    },
-  ];
 
   return (
     <PageShell>
@@ -692,12 +728,29 @@ export function TherapistProfilePage() {
             </div>
             <div className="grid gap-lg lg:grid-cols-[160px_minmax(0,1fr)]">
               <div className="text-center">
-                <label className="relative mx-auto block h-32 w-32 cursor-pointer overflow-hidden rounded-[1.5rem] border-2 border-botanical-border transition hover:border-primary">
-                  <img src={profile?.portraitUrl || profile?.avatarUrl || profileAvatarImage} alt="Ảnh chân dung kỹ thuật viên" className="h-full w-full object-cover" />
-                  <div className="absolute inset-x-0 bottom-0 bg-black/40 py-xs text-label-caption font-black text-white">Đổi ảnh</div>
-                  <input type="file" accept="image/*" className="sr-only" />
+                <label className={`relative mx-auto block h-32 w-32 overflow-hidden rounded-[1.5rem] border-2 border-botanical-border transition ${uploadingPortrait ? 'cursor-wait opacity-60' : 'cursor-pointer hover:border-primary'}`}>
+                  <img
+                    src={profile?.portraitUrl || profile?.avatarUrl || "/placeholder-avatar.png"}
+                    alt="Ảnh chân dung kỹ thuật viên"
+                    className="h-full w-full object-cover"
+                  />
+                  <div className="absolute inset-x-0 bottom-0 bg-black/40 py-xs text-label-caption font-black text-white">
+                    {uploadingPortrait ? "Đang tải..." : "Đổi ảnh"}
+                  </div>
+                  <input
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp"
+                    onChange={handlePortraitUpload}
+                    disabled={uploadingPortrait}
+                    className="sr-only"
+                  />
                 </label>
-                <p className="mt-sm text-label-caption font-bold text-sage-secondary">Tải lên ảnh chân dung</p>
+                <p className="mt-sm text-label-caption font-bold text-sage-secondary">
+                  Tải lên ảnh chân dung
+                </p>
+                {uploadError && (
+                  <p className="mt-xs text-xs font-semibold text-red-600">{uploadError}</p>
+                )}
               </div>
               <div className="grid gap-md md:grid-cols-2">
                 <TextField label="Họ và tên" value={therapistName} />
@@ -733,20 +786,84 @@ export function TherapistProfilePage() {
           <section className="rounded-[2rem] border border-botanical-border bg-white p-lg shadow-stitch-soft">
             <h2 className="mb-lg inline-flex items-center gap-sm text-xl font-black text-ink-primary"><ShieldCheck className="h-5 w-5 text-primary" /> Chứng chỉ & giấy tờ</h2>
             <div className="grid gap-md md:grid-cols-2">
-              {documents.map((doc) => {
-                const Icon = doc.icon;
-                return (
-                  <div key={doc.title} className="flex items-center gap-md rounded-3xl border border-botanical-border bg-warm-bg p-md">
-                    <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-soft-mint text-primary"><Icon className="h-5 w-5" /></div>
-                    <div className="min-w-0 flex-1">
-                      <p className="font-black text-ink-primary">{doc.title}</p>
-                      <p className="text-label-caption font-semibold text-sage-secondary">{doc.hint}</p>
-                    </div>
-                    <StatusBadge tone={doc.tone}>{doc.status}</StatusBadge>
-                  </div>
-                );
-              })}
+              {/* Citizen ID Front */}
+              <label className={`flex cursor-pointer items-center gap-md rounded-3xl border border-botanical-border bg-warm-bg p-md transition ${uploadingCitizenId === 'front' ? 'opacity-60' : 'hover:bg-soft-mint'}`}>
+                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-soft-mint text-primary">
+                  <IdCard className="h-5 w-5" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="font-black text-ink-primary">CCCD Mặt trước</p>
+                  <p className="text-label-caption font-semibold text-sage-secondary">
+                    {uploadingCitizenId === 'front' ? 'Đang tải...' : profile?.citizenIdFrontUrl ? 'Đã tải lên' : 'Chưa tải lên'}
+                  </p>
+                </div>
+                <StatusBadge tone={profile?.citizenIdFrontUrl ? "teal" : "slate"}>
+                  {profile?.citizenIdFrontUrl ? "Đã có" : "Chưa có"}
+                </StatusBadge>
+                <input
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp"
+                  onChange={handleCitizenIdFrontUpload}
+                  disabled={uploadingCitizenId !== null}
+                  className="sr-only"
+                />
+              </label>
+
+              {/* Citizen ID Back */}
+              <label className={`flex cursor-pointer items-center gap-md rounded-3xl border border-botanical-border bg-warm-bg p-md transition ${uploadingCitizenId === 'back' ? 'opacity-60' : 'hover:bg-soft-mint'}`}>
+                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-soft-mint text-primary">
+                  <IdCard className="h-5 w-5" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="font-black text-ink-primary">CCCD Mặt sau</p>
+                  <p className="text-label-caption font-semibold text-sage-secondary">
+                    {uploadingCitizenId === 'back' ? 'Đang tải...' : profile?.citizenIdBackUrl ? 'Đã tải lên' : 'Chưa tải lên'}
+                  </p>
+                </div>
+                <StatusBadge tone={profile?.citizenIdBackUrl ? "teal" : "slate"}>
+                  {profile?.citizenIdBackUrl ? "Đã có" : "Chưa có"}
+                </StatusBadge>
+                <input
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp"
+                  onChange={handleCitizenIdBackUpload}
+                  disabled={uploadingCitizenId !== null}
+                  className="sr-only"
+                />
+              </label>
+
+              {/* Certificates - clickable upload label */}
+              <label className={`flex cursor-pointer items-center gap-md rounded-3xl border border-botanical-border bg-warm-bg p-md transition ${uploadingCertificate ? 'opacity-60' : 'hover:bg-soft-mint'}`}>
+                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-soft-mint text-primary">
+                  <FileText className="h-5 w-5" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="font-black text-ink-primary">Chứng chỉ hành nghề</p>
+                  <p className="text-label-caption font-semibold text-sage-secondary">
+                    {uploadingCertificate
+                      ? 'Đang tải...'
+                      : certificateUrls.length > 0
+                        ? `${certificateUrls.length} file đã tải lên`
+                        : 'Chưa tải lên'}
+                  </p>
+                </div>
+                <StatusBadge tone={certificateUrls.length > 0 ? "teal" : "slate"}>
+                  {certificateUrls.length > 0 ? "Đã có" : "Chưa có"}
+                </StatusBadge>
+                <input
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp"
+                  multiple
+                  onChange={handleCertificateUpload}
+                  disabled={uploadingCertificate}
+                  className="sr-only"
+                  aria-label="Tải lên chứng chỉ hành nghề"
+                />
+              </label>
             </div>
+            {uploadError && uploadingCertificate === false && (
+              <p className="mt-sm text-xs font-semibold text-red-600">{uploadError}</p>
+            )}
           </section>
 
           <section className="rounded-[2rem] border border-botanical-border bg-white p-lg shadow-stitch-soft">
@@ -770,7 +887,7 @@ export function TherapistProfilePage() {
             <div className="border-b border-botanical-border bg-soft-mint p-md text-label-caption font-black uppercase tracking-wider text-primary">Xem trước hồ sơ</div>
             <div className="p-lg text-center">
               <div className="mx-auto mb-md h-24 w-24">
-                <img src={profile?.portraitUrl || profile?.avatarUrl || profilePreviewImage} alt="Ảnh xem trước hồ sơ" className="h-24 w-24 rounded-full border-4 border-soft-mint object-cover shadow-lg" />
+                <img src={profile?.portraitUrl || profile?.avatarUrl || "/placeholder-avatar.png"} alt="Ảnh xem trước hồ sơ" className="h-24 w-24 rounded-full border-4 border-soft-mint object-cover shadow-lg" />
               </div>
               <h2 className="text-2xl font-black text-ink-primary">{therapistName}</h2>
               <p className="mt-xs text-body-sm font-bold text-sage-secondary">Chuyên gia massage trị liệu</p>
