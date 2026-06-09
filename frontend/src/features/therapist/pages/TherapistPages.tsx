@@ -50,7 +50,6 @@ import { useScheduleStore } from "../stores/schedule-store";
 import { useTreatmentStore } from "../stores/treatment-store";
 import { useWalletStore } from "../stores/wallet-store";
 import { uploadFile } from "@/services/upload-service";
-import profilePreviewImage from "@/assets/therapist-dashboard/therapist-profile-management-image-3.webp";
 
 const money = new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" });
 const moneyCompact = new Intl.NumberFormat("vi-VN", { notation: "compact", maximumFractionDigits: 1 });
@@ -888,7 +887,7 @@ export function TherapistProfilePage() {
             <div className="border-b border-botanical-border bg-soft-mint p-md text-label-caption font-black uppercase tracking-wider text-primary">Xem trước hồ sơ</div>
             <div className="p-lg text-center">
               <div className="mx-auto mb-md h-24 w-24">
-                <img src={profile?.portraitUrl || profile?.avatarUrl || profilePreviewImage} alt="Ảnh xem trước hồ sơ" className="h-24 w-24 rounded-full border-4 border-soft-mint object-cover shadow-lg" />
+                <img src={profile?.portraitUrl || profile?.avatarUrl || "/placeholder-avatar.png"} alt="Ảnh xem trước hồ sơ" className="h-24 w-24 rounded-full border-4 border-soft-mint object-cover shadow-lg" />
               </div>
               <h2 className="text-2xl font-black text-ink-primary">{therapistName}</h2>
               <p className="mt-xs text-body-sm font-bold text-sage-secondary">Chuyên gia massage trị liệu</p>
