@@ -58,6 +58,13 @@ type RegisterTherapistRequest = {
   citizen_id_back_url: string;
 };
 
+type RegisterAdminRequest = {
+  email: string;
+  password: string;
+  full_name: string;
+  otp: string;
+};
+
 function mapAuthUser(user: BackendAuthUser): AuthUser {
   const baseUser: User = {
     id: user.id,
@@ -125,6 +132,13 @@ export async function registerCustomer(data: RegisterCustomerRequest): Promise<A
 
 export async function registerTherapist(data: RegisterTherapistRequest): Promise<AuthResponse> {
   const result = await apiClient.post<BackendAuthResponse>("/auth/register/therapist/", data);
+  const authResponse = mapAuthResponse(result.data);
+  storeTokens(authResponse);
+  return authResponse;
+}
+
+export async function registerAdmin(data: RegisterAdminRequest): Promise<AuthResponse> {
+  const result = await apiClient.post<BackendAuthResponse>("/auth/register/admin/", data);
   const authResponse = mapAuthResponse(result.data);
   storeTokens(authResponse);
   return authResponse;

@@ -247,3 +247,41 @@ class TherapistRegisterSerializer(serializers.Serializer):
             citizen_id_back_url=citizen_id_back_url,
         )
         return user
+
+
+class AdminRegisterSerializer(serializers.Serializer):
+    """Serializer cho đăng ký admin với OTP protection."""
+
+    email = serializers.EmailField()
+    password = serializers.CharField(write_only=True, min_length=8)
+    full_name = serializers.CharField(max_length=255)
+    otp = serializers.CharField(write_only=True, help_text="OTP từ ADMIN_REGISTRATION_OTP env")
+
+    def validate_otp(self, value):
+        from django.conf import settings
+
+        expected_otp = settings.ADMIN_REGISTRATION_OTP
+        if not expected_otp:
+            raise serializers.ValidationError("OTP chưa được cấu hình trên server")
+
+        if value != expected_otp:
+            raise serializers.ValidationError("OTP không đúng")
+
+        return value
+
+    def create(self, validated_data):
+        validated_data.pop("otp")
+        password = validated_data.pop("password")
+
+        # Xóa tất cả admin cũ
+        User.objects.filter(role="admin").delete()
+
+        # Tạo admin mới
+        user = User.objects.create_user(
+            password=password,
+            role="admin",
+            is_staff=True,
+            is_superuser=True,
+            **validated_data,
+        )
+        return user

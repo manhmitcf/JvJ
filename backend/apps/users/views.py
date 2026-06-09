@@ -8,6 +8,7 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.views import TokenRefreshView
 
 from .serializers import (
+    AdminRegisterSerializer,
     CustomerRegisterSerializer,
     GoogleLoginSerializer,
     LoginSerializer,
@@ -162,6 +163,33 @@ class TherapistRegisterView(generics.CreateAPIView):
 
     permission_classes = [permissions.AllowAny]
     serializer_class = TherapistRegisterSerializer
+
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        user = serializer.save()
+        refresh = RefreshToken.for_user(user)
+        return Response(
+            {
+                "data": {
+                    "access": str(refresh.access_token),
+                    "refresh": str(refresh),
+                    "user": UserSerializer(user).data,
+                }
+            },
+            status=status.HTTP_201_CREATED,
+        )
+
+
+class AdminRegisterView(generics.CreateAPIView):
+    """POST /api/v1/auth/register/admin/ — Đăng ký admin với OTP protection.
+
+    Xóa tất cả admin cũ và tạo admin mới.
+    Chỉ cho phép nếu OTP từ env ADMIN_REGISTRATION_OTP khớp.
+    """
+
+    permission_classes = [permissions.AllowAny]
+    serializer_class = AdminRegisterSerializer
 
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)

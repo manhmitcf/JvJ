@@ -18,6 +18,7 @@ import {
   AdminUsersPage,
 } from "@/features/admin/pages/AdminPages";
 import { AdminLoginPage } from "@/features/admin/pages/AdminLoginPage";
+import { AdminRegisterPage } from "@/features/admin/pages/AdminRegisterPage";
 import {
   TherapistBookingsPage,
   TherapistHomePage,
@@ -57,6 +58,7 @@ export const router = createBrowserRouter([
       { path: "/login", element: <LoginPage /> },
       { path: "/register", element: <RegisterPage /> },
       { path: "/admin/login", element: <AdminLoginPage /> },
+      { path: "/admin/register", element: <AdminRegisterPage /> },
     ],
   },
   {
