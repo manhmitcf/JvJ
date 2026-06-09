@@ -126,15 +126,17 @@ User = get_user_model()
 
 
 class AdminUserListView(generics.ListAPIView):
-    """GET /api/v1/admin/users/?role=&search="""
+    """GET /api/v1/admin/users/?role=&search=&status="""
 
     permission_classes = [permissions.IsAuthenticated, IsAdminRole]
     serializer_class = AdminUserListSerializer
 
     def get_queryset(self):
-        qs = User.objects.all().order_by("-created_at")
+        qs = User.objects.select_related("therapist_profile").all().order_by("-created_at")
         role = self.request.query_params.get("role")
         search = self.request.query_params.get("search")
+        status = self.request.query_params.get("status")
+
         if role:
             qs = qs.filter(role=role)
         if search:
@@ -143,6 +145,24 @@ class AdminUserListView(generics.ListAPIView):
                 | Q(email__icontains=search)
                 | Q(phone__icontains=search)
             )
+
+        # Filter by status
+        if status:
+            if status == "active":
+                qs = qs.filter(is_active=True)
+            elif status == "suspended":
+                qs = qs.filter(is_active=False)
+            elif status == "pending_approval":
+                qs = qs.filter(
+                    role="therapist",
+                    therapist_profile__status="pending_approval"
+                )
+            elif status == "rejected":
+                qs = qs.filter(
+                    role="therapist",
+                    therapist_profile__status="rejected"
+                )
+
         return qs
 
     def get_paginated_response(self, data):
