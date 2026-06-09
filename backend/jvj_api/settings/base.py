@@ -141,7 +141,7 @@ STATIC_ROOT = BASE_DIR / "staticfiles"
 
 # --- Media files (User-uploaded content) ---
 MEDIA_URL = "/media/"
-MEDIA_ROOT = BASE_DIR / "media"
+MEDIA_ROOT = Path("/app/media")  # Absolute path for Docker volume mount
 
 # --- Default primary key field type ---
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
