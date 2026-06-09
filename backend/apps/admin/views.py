@@ -9,6 +9,7 @@ from rest_framework.views import APIView
 
 from apps.bookings.models import Booking
 from apps.common.pagination import StandardPagination
+from apps.common.permissions import IsActiveUser
 from apps.reviews.models import Review
 from apps.spas.models import Spa
 from apps.therapists.models import TherapistProfile
@@ -28,16 +29,22 @@ from .serializers import (
 
 
 class IsAdminRole(permissions.BasePermission):
-    """Chỉ cho phép user có role=admin."""
+    """Chỉ cho phép user có role=admin AND is_active=True."""
 
     def has_permission(self, request, view):
-        return request.user.is_authenticated and request.user.role == "admin"
+        return (
+            request.user.is_authenticated
+            and request.user.is_active
+            and request.user.role == "admin"
+        )
+
+    message = "Chỉ admin mới có quyền truy cập"
 
 
 class AdminStatsView(APIView):
     """GET /api/v1/admin/stats/overview/ — Dashboard KPI."""
 
-    permission_classes = [permissions.IsAuthenticated, IsAdminRole]
+    permission_classes = [IsActiveUser, IsAdminRole]
 
     def get(self, request):
         today = timezone.now().date()
@@ -128,7 +135,7 @@ User = get_user_model()
 class AdminUserListView(generics.ListAPIView):
     """GET /api/v1/admin/users/?role=&search=&status="""
 
-    permission_classes = [permissions.IsAuthenticated, IsAdminRole]
+    permission_classes = [IsActiveUser, IsAdminRole]
     serializer_class = AdminUserListSerializer
 
     def get_queryset(self):
@@ -173,7 +180,7 @@ class AdminUserListView(generics.ListAPIView):
 class AdminUserDetailView(generics.RetrieveAPIView):
     """GET /api/v1/admin/users/:id/"""
 
-    permission_classes = [permissions.IsAuthenticated, IsAdminRole]
+    permission_classes = [IsActiveUser, IsAdminRole]
     serializer_class = AdminUserDetailSerializer
     queryset = User.objects.all()
     lookup_field = "id"
@@ -182,7 +189,7 @@ class AdminUserDetailView(generics.RetrieveAPIView):
 class AdminUserUpdateView(generics.UpdateAPIView):
     """PATCH /api/v1/admin/users/:id/update/ — suspend/activate"""
 
-    permission_classes = [permissions.IsAuthenticated, IsAdminRole]
+    permission_classes = [IsActiveUser, IsAdminRole]
     serializer_class = AdminUserUpdateSerializer
     queryset = User.objects.all()
     lookup_field = "id"
@@ -190,7 +197,7 @@ class AdminUserUpdateView(generics.UpdateAPIView):
 
 class AdminPendingTherapistsView(generics.ListAPIView):
     """GET /api/v1/admin/therapists/pending/?status=pending_approval|approved|rejected"""
-    permission_classes = [permissions.IsAuthenticated, IsAdminRole]
+    permission_classes = [IsActiveUser, IsAdminRole]
     serializer_class = AdminTherapistDetailSerializer
 
     def get_queryset(self):
@@ -207,7 +214,7 @@ class AdminPendingTherapistsView(generics.ListAPIView):
 
 class AdminTherapistDetailView(generics.RetrieveAPIView):
     """GET /api/v1/admin/therapists/:id/"""
-    permission_classes = [permissions.IsAuthenticated, IsAdminRole]
+    permission_classes = [IsActiveUser, IsAdminRole]
     serializer_class = AdminTherapistDetailSerializer
     queryset = TherapistProfile.objects.select_related("user")
     lookup_field = "id"
@@ -219,7 +226,7 @@ class AdminTherapistDetailView(generics.RetrieveAPIView):
 
 class AdminTherapistApproveView(APIView):
     """POST /api/v1/admin/therapists/:id/approve/"""
-    permission_classes = [permissions.IsAuthenticated, IsAdminRole]
+    permission_classes = [IsActiveUser, IsAdminRole]
 
     def post(self, request, id):
         try:
@@ -239,7 +246,7 @@ class AdminTherapistApproveView(APIView):
 
 class AdminTherapistRejectView(APIView):
     """POST /api/v1/admin/therapists/:id/reject/"""
-    permission_classes = [permissions.IsAuthenticated, IsAdminRole]
+    permission_classes = [IsActiveUser, IsAdminRole]
 
     def post(self, request, id):
         serializer = AdminTherapistRejectSerializer(data=request.data)
@@ -262,7 +269,7 @@ class AdminTherapistRejectView(APIView):
 class AdminBookingListView(generics.ListAPIView):
     """GET /api/v1/admin/bookings/?status=&payment_status=&therapist="""
 
-    permission_classes = [permissions.IsAuthenticated, IsAdminRole]
+    permission_classes = [IsActiveUser, IsAdminRole]
     serializer_class = AdminBookingListSerializer
     pagination_class = StandardPagination
 
@@ -287,7 +294,7 @@ class AdminBookingListView(generics.ListAPIView):
 class AdminBookingDetailView(generics.RetrieveAPIView):
     """GET /api/v1/admin/bookings/:id/"""
 
-    permission_classes = [permissions.IsAuthenticated, IsAdminRole]
+    permission_classes = [IsActiveUser, IsAdminRole]
     serializer_class = AdminBookingDetailSerializer
     queryset = Booking.objects.select_related("customer", "therapist", "treatment", "timeslot")
     lookup_field = "id"
@@ -296,7 +303,7 @@ class AdminBookingDetailView(generics.RetrieveAPIView):
 class AdminBookingForceCancelView(APIView):
     """POST /api/v1/admin/bookings/:id/force-cancel/"""
 
-    permission_classes = [permissions.IsAuthenticated, IsAdminRole]
+    permission_classes = [IsActiveUser, IsAdminRole]
 
     def post(self, request, id):
         reason = request.data.get("reason", "").strip()
@@ -319,7 +326,7 @@ class AdminBookingForceCancelView(APIView):
 
 class AdminSpaListCreateView(generics.ListCreateAPIView):
     """GET/POST /api/v1/admin/spas/"""
-    permission_classes = [permissions.IsAuthenticated, IsAdminRole]
+    permission_classes = [IsActiveUser, IsAdminRole]
 
     def get_serializer_class(self):
         if self.request.method == "POST":
@@ -340,7 +347,7 @@ class AdminSpaListCreateView(generics.ListCreateAPIView):
 
 class AdminSpaUpdateView(generics.RetrieveUpdateDestroyAPIView):
     """GET/PUT/DELETE /api/v1/admin/spas/:id/"""
-    permission_classes = [permissions.IsAuthenticated, IsAdminRole]
+    permission_classes = [IsActiveUser, IsAdminRole]
     serializer_class = AdminSpaUpdateSerializer
     queryset = Spa.objects.all()
     lookup_field = "id"
@@ -353,7 +360,7 @@ class AdminSpaUpdateView(generics.RetrieveUpdateDestroyAPIView):
 
 class AdminReviewVisibilityView(APIView):
     """PATCH /api/v1/admin/reviews/:id/visibility/"""
-    permission_classes = [permissions.IsAuthenticated, IsAdminRole]
+    permission_classes = [IsActiveUser, IsAdminRole]
 
     def patch(self, request, id):
         is_visible = request.data.get("is_visible")

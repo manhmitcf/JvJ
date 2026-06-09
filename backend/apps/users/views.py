@@ -7,6 +7,8 @@ from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.views import TokenRefreshView
 
+from apps.common.permissions import IsActiveUser
+
 from .serializers import (
     AdminRegisterSerializer,
     CustomerRegisterSerializer,
@@ -93,6 +95,13 @@ class GoogleLoginView(APIView):
                 "avatar_url": picture,
             },
         )
+
+        # Check if account is suspended
+        if not user.is_active:
+            return Response(
+                {"error": {"code": "ACCOUNT_SUSPENDED", "message": "Tài khoản đã bị tạm khóa"}},
+                status=status.HTTP_403_FORBIDDEN,
+            )
 
         if not created:
             user.full_name = name or user.full_name
@@ -211,7 +220,7 @@ class AdminRegisterView(generics.CreateAPIView):
 class LogoutView(APIView):
     """POST /api/v1/auth/logout/ — Blacklist refresh token."""
 
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [IsActiveUser]
 
     def post(self, request):
         try:
@@ -237,7 +246,7 @@ class LogoutView(APIView):
 class MeView(generics.RetrieveUpdateAPIView):
     """GET/PUT /api/v1/auth/me/ — Current user profile."""
 
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [IsActiveUser]
 
     def get_object(self):
         return self.request.user
