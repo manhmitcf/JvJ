@@ -36,9 +36,6 @@ import { SpaListingPage } from "@/features/spas/SpaListingPage";
 import { CustomerPaymentPage } from "@/features/payments/CustomerPaymentPage";
 import { ErrorPage } from "@/pages/ErrorPage";
 import { NotFoundPage } from "@/pages/NotFoundPage";
-import {
-  ForgotPasswordPlaceholder,
-} from "@/pages/placeholder-pages";
 
 export const router = createBrowserRouter([
   {
@@ -59,7 +56,6 @@ export const router = createBrowserRouter([
     children: [
       { path: "/login", element: <LoginPage /> },
       { path: "/register", element: <RegisterPage /> },
-      { path: "/forgot-password", element: <ForgotPasswordPlaceholder /> },
       { path: "/admin/login", element: <AdminLoginPage /> },
     ],
   },
