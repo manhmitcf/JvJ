@@ -604,6 +604,7 @@ export function TherapistProfilePage() {
 
   const [uploadingPortrait, setUploadingPortrait] = useState(false);
   const [uploadingCitizenId, setUploadingCitizenId] = useState<'front' | 'back' | null>(null);
+  const [uploadingCertificate, setUploadingCertificate] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -663,6 +664,29 @@ export function TherapistProfilePage() {
       setUploadError(message);
     } finally {
       setUploadingCitizenId(null);
+    }
+  };
+
+  const handleCertificateUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = event.target.files;
+    if (!files || files.length === 0) return;
+
+    setUploadingCertificate(true);
+    setUploadError(null);
+    try {
+      const uploadPromises = Array.from(files).map(f => uploadFile(f));
+      const urls = await Promise.all(uploadPromises);
+
+      // Merge with existing certificates
+      const newCertificateUrls = [...certificateUrls, ...urls];
+      await saveProfile({ certificateUrls: newCertificateUrls });
+
+      event.target.value = "";
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Upload thất bại";
+      setUploadError(message);
+    } finally {
+      setUploadingCertificate(false);
     }
   };
 
@@ -807,21 +831,33 @@ export function TherapistProfilePage() {
                 />
               </label>
 
-              {/* Certificates - keep existing static display for now */}
-              <div className="flex items-center gap-md rounded-3xl border border-botanical-border bg-warm-bg p-md">
+              {/* Certificates - clickable upload label */}
+              <label className={`flex cursor-pointer items-center gap-md rounded-3xl border border-botanical-border bg-warm-bg p-md transition ${uploadingCertificate ? 'opacity-60' : 'hover:bg-soft-mint'}`}>
                 <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-soft-mint text-primary">
                   <FileText className="h-5 w-5" />
                 </div>
                 <div className="min-w-0 flex-1">
                   <p className="font-black text-ink-primary">Chứng chỉ hành nghề</p>
                   <p className="text-label-caption font-semibold text-sage-secondary">
-                    {certificateUrls.length > 0 ? `${certificateUrls.length} file đã tải lên` : 'Chưa tải lên'}
+                    {uploadingCertificate
+                      ? 'Đang tải...'
+                      : certificateUrls.length > 0
+                        ? `${certificateUrls.length} file đã tải lên`
+                        : 'Chưa tải lên'}
                   </p>
                 </div>
                 <StatusBadge tone={certificateUrls.length > 0 ? "teal" : "slate"}>
                   {certificateUrls.length > 0 ? "Đã có" : "Chưa có"}
                 </StatusBadge>
-              </div>
+                <input
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp"
+                  multiple
+                  onChange={handleCertificateUpload}
+                  disabled={uploadingCertificate}
+                  className="sr-only"
+                />
+              </label>
             </div>
           </section>
 

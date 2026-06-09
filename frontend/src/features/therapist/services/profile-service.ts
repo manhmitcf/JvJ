@@ -40,6 +40,7 @@ export type UpdateProfileInput = {
   specialties?: string[];
   citizenIdFrontUrl?: string;
   citizenIdBackUrl?: string;
+  certificateUrls?: string[];
 };
 
 export async function getTherapistProfile(): Promise<Therapist> {
@@ -58,6 +59,7 @@ export async function updateTherapistProfile(input: UpdateProfileInput): Promise
   if (input.specialties !== undefined) body.specialties = input.specialties;
   if (input.citizenIdFrontUrl !== undefined) body.citizen_id_front_url = input.citizenIdFrontUrl;
   if (input.citizenIdBackUrl !== undefined) body.citizen_id_back_url = input.citizenIdBackUrl;
+  if (input.certificateUrls !== undefined) body.certificate_urls = input.certificateUrls;
 
   const dto = await apiFetch<TherapistProfileDto>("/therapists/profile/", {
     method: "PUT",
