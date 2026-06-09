@@ -3,6 +3,9 @@
 # ============================================
 .claude/worktrees/
 .worktrees/
+.claude/CLAUDE.md
+.claude/settings.local.json
+.claude/settings.json
 
 # ============================================
 # Environment & Secrets
@@ -96,3 +99,4 @@ frontend/.stitch/
 # Documentation (Superpowers)
 # ============================================
 docs/superpowers/
+docs/
