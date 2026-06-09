@@ -34,6 +34,7 @@ export type UpdateProfileInput = {
   full_name?: string;
   phone?: string;
   avatar_url?: string;
+  portraitUrl?: string;
   bio?: string;
   years_of_experience?: number;
   specialties?: string[];
@@ -49,6 +50,7 @@ export async function updateTherapistProfile(input: UpdateProfileInput): Promise
   if (input.full_name !== undefined) body.full_name = input.full_name;
   if (input.phone !== undefined) body.phone = input.phone;
   if (input.avatar_url !== undefined) body.avatar_url = input.avatar_url;
+  if (input.portraitUrl !== undefined) body.portrait_url = input.portraitUrl;
   if (input.bio !== undefined) body.bio = input.bio;
   if (input.years_of_experience !== undefined) body.years_of_experience = input.years_of_experience;
   if (input.specialties !== undefined) body.specialties = input.specialties;
