@@ -677,8 +677,9 @@ export function TherapistProfilePage() {
       const uploadPromises = Array.from(files).map(f => uploadFile(f));
       const urls = await Promise.all(uploadPromises);
 
-      // Merge with existing certificates
-      const newCertificateUrls = [...certificateUrls, ...urls];
+      // Merge with existing certificates - get from profile state
+      const existingCertificates = profile?.certificateUrls ?? [];
+      const newCertificateUrls = [...existingCertificates, ...urls];
       await saveProfile({ certificateUrls: newCertificateUrls });
 
       event.target.value = "";
@@ -856,9 +857,13 @@ export function TherapistProfilePage() {
                   onChange={handleCertificateUpload}
                   disabled={uploadingCertificate}
                   className="sr-only"
+                  aria-label="Tải lên chứng chỉ hành nghề"
                 />
               </label>
             </div>
+            {uploadError && uploadingCertificate === false && (
+              <p className="mt-sm text-xs font-semibold text-red-600">{uploadError}</p>
+            )}
           </section>
 
           <section className="rounded-[2rem] border border-botanical-border bg-white p-lg shadow-stitch-soft">
