@@ -17,17 +17,21 @@ export async function getAdminOverview(): Promise<AdminOverview> {
       activeTherapists: d.active_therapists as number,
       newBookingsToday: d.new_bookings_today as number,
       pendingTherapistApprovals: d.pending_therapist_approvals as number,
-      unresolvedComplaints: 0,
+      totalRevenueMonth: d.total_revenue_month as number,
+      completedBookingsMonth: d.completed_bookings_month as number,
     },
-    chart: [],
-    alerts: [
-      {
-        id: "alert-approvals",
-        title: "Hồ sơ kỹ thuật viên chờ duyệt",
-        description: `${d.pending_therapist_approvals} hồ sơ cần Admin kiểm tra chứng chỉ.`,
-        tone: "amber" as const,
-        href: "/admin/therapist-approvals",
-      },
-    ],
+    chart: (d.chart_7_days as Array<Record<string, unknown>>).map((item) => ({
+      date: item.date as string,
+      label: item.day_of_week as string,
+      revenue: item.revenue as number,
+      bookings: item.bookings as number,
+    })),
+    alerts: (d.alerts as Array<Record<string, unknown>>).map((item) => ({
+      id: item.id as string,
+      title: item.title as string,
+      description: item.description as string,
+      tone: item.tone as "amber" | "red" | "teal",
+      href: item.href as string,
+    })),
   };
 }

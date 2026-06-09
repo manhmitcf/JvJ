@@ -19,10 +19,12 @@ export type AdminOverviewMetrics = {
   activeTherapists: number;
   newBookingsToday: number;
   pendingTherapistApprovals: number;
-  unresolvedComplaints: number;
+  totalRevenueMonth: number;
+  completedBookingsMonth: number;
 };
 
 export type AdminChartPoint = {
+  date: string;
   label: string;
   revenue: number;
   bookings: number;

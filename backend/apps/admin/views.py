@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from django.contrib.auth import get_user_model
 from django.db.models import Count, Q, Sum
@@ -63,6 +63,51 @@ class AdminStatsView(APIView):
             completed_count=Count("id"),
         )
 
+        # Chart 7 days: doanh thu + booking theo ngày
+        seven_days_ago = today - timedelta(days=6)
+        daily_stats = (
+            Booking.objects
+            .filter(
+                payment_status="paid",
+                completed_at__date__gte=seven_days_ago,
+                completed_at__date__lte=today
+            )
+            .values('completed_at__date')
+            .annotate(
+                revenue=Sum('total_amount'),
+                bookings=Count('id')
+            )
+            .order_by('completed_at__date')
+        )
+
+        # Build chart_7_days array với đủ 7 ngày
+        stats_dict = {item['completed_at__date']: item for item in daily_stats}
+        chart_7_days = []
+        day_names = ['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN']
+
+        for i in range(7):
+            date = seven_days_ago + timedelta(days=i)
+            day_of_week = day_names[date.weekday()]
+            stat = stats_dict.get(date, {})
+
+            chart_7_days.append({
+                'date': date.isoformat(),
+                'day_of_week': day_of_week,
+                'revenue': int(stat.get('revenue', 0) or 0),
+                'bookings': stat.get('bookings', 0) or 0,
+            })
+
+        # Alerts: chỉ 1 alert về therapist chờ duyệt
+        alerts = []
+        if pending_approvals > 0:
+            alerts.append({
+                'id': 'pending-therapists',
+                'title': 'Hồ sơ kỹ thuật viên chờ duyệt',
+                'description': f'{pending_approvals} hồ sơ cần Admin kiểm tra chứng chỉ',
+                'tone': 'amber',
+                'href': '/admin/therapist-approvals',
+            })
+
         return Response({
             "data": {
                 "total_customers": total_customers,
@@ -71,6 +116,8 @@ class AdminStatsView(APIView):
                 "pending_therapist_approvals": pending_approvals,
                 "total_revenue_month": monthly["total_revenue"] or 0,
                 "completed_bookings_month": monthly["completed_count"] or 0,
+                "chart_7_days": chart_7_days,
+                "alerts": alerts,
             }
         })
 

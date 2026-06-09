@@ -1,9 +1,10 @@
-import { AlertTriangle, CalendarCheck, CheckCircle2, CircleDollarSign, UserCheck, Users } from "lucide-react";
+import { CalendarCheck, CheckCircle2, CircleDollarSign, UserCheck, Users } from "lucide-react";
 import { Link } from "react-router-dom";
 import { type AdminAlert, type AdminChartPoint, type AdminOverviewMetrics } from "@/types/admin";
 import { AdminMetricCard, AdminStatusBadge } from "./shared";
 
 const formatter = new Intl.NumberFormat("vi-VN");
+const currencyFormatter = new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" });
 
 export function AdminOverviewPanels({ metrics, chart, alerts }: { metrics: AdminOverviewMetrics; chart: AdminChartPoint[]; alerts: AdminAlert[] }) {
   const maxRevenue = Math.max(...chart.map((point) => point.revenue), 1);
@@ -15,7 +16,7 @@ export function AdminOverviewPanels({ metrics, chart, alerts }: { metrics: Admin
         <AdminMetricCard label="KTV hoạt động" value={formatter.format(metrics.activeTherapists)} helper="Therapist đã được duyệt" icon={<UserCheck className="h-5 w-5" />} />
         <AdminMetricCard label="Booking hôm nay" value={formatter.format(metrics.newBookingsToday)} helper="Lịch mới cần theo dõi" icon={<CalendarCheck className="h-5 w-5" />} />
         <AdminMetricCard label="Hồ sơ chờ duyệt" value={formatter.format(metrics.pendingTherapistApprovals)} helper="Cần phản hồi trong ngày" icon={<CheckCircle2 className="h-5 w-5" />} />
-        <AdminMetricCard label="Khiếu nại mở" value={formatter.format(metrics.unresolvedComplaints)} helper="Ưu tiên xử lý vận hành" icon={<AlertTriangle className="h-5 w-5" />} />
+        <AdminMetricCard label="Doanh thu tháng" value={currencyFormatter.format(metrics.totalRevenueMonth)} helper="Tổng booking đã thanh toán" icon={<CircleDollarSign className="h-5 w-5" />} />
       </div>
 
       <div className="grid gap-lg xl:grid-cols-[1.4fr_0.8fr]">
@@ -29,7 +30,7 @@ export function AdminOverviewPanels({ metrics, chart, alerts }: { metrics: Admin
           </div>
           <div className="mt-lg flex h-72 items-end gap-sm rounded-[1.5rem] bg-warm-bg p-md">
             {chart.map((point) => (
-              <div key={point.label} className="flex h-full flex-1 flex-col justify-end gap-xs">
+              <div key={point.date} className="flex h-full flex-1 flex-col justify-end gap-xs">
                 <div className="flex flex-1 items-end rounded-full bg-white px-1 py-1 shadow-sm">
                   <div className="w-full rounded-full bg-gradient-to-t from-primary to-[#5EEAD4]" style={{ height: `${Math.max((point.revenue / maxRevenue) * 100, 10)}%` }} />
                 </div>
@@ -51,17 +52,23 @@ export function AdminOverviewPanels({ metrics, chart, alerts }: { metrics: Admin
             <CircleDollarSign className="h-6 w-6 text-primary" />
           </div>
           <div className="mt-lg space-y-sm">
-            {alerts.map((alert) => (
-              <Link key={alert.id} to={alert.href} className="block rounded-[1.5rem] border border-botanical-border bg-warm-bg p-md transition-colors hover:border-primary hover:bg-soft-mint/60">
-                <div className="flex items-start justify-between gap-sm">
-                  <div>
-                    <p className="text-body-sm font-black text-ink-primary">{alert.title}</p>
-                    <p className="mt-1 text-body-sm font-semibold text-sage-secondary">{alert.description}</p>
+            {alerts.length > 0 ? (
+              alerts.map((alert) => (
+                <Link key={alert.id} to={alert.href} className="block rounded-[1.5rem] border border-botanical-border bg-warm-bg p-md transition-colors hover:border-primary hover:bg-soft-mint/60">
+                  <div className="flex items-start justify-between gap-sm">
+                    <div>
+                      <p className="text-body-sm font-black text-ink-primary">{alert.title}</p>
+                      <p className="mt-1 text-body-sm font-semibold text-sage-secondary">{alert.description}</p>
+                    </div>
+                    <AdminStatusBadge tone={alert.tone}>{alert.tone === "red" ? "Gấp" : alert.tone === "amber" ? "Cần xem" : "Mới"}</AdminStatusBadge>
                   </div>
-                  <AdminStatusBadge tone={alert.tone}>{alert.tone === "red" ? "Gấp" : alert.tone === "amber" ? "Cần xem" : "Mới"}</AdminStatusBadge>
-                </div>
-              </Link>
-            ))}
+                </Link>
+              ))
+            ) : (
+              <div className="rounded-[1.5rem] border border-botanical-border bg-warm-bg p-md text-center">
+                <p className="text-body-sm font-semibold text-sage-secondary">Không có cảnh báo nào</p>
+              </div>
+            )}
           </div>
         </section>
       </div>
