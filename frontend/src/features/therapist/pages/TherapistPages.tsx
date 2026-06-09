@@ -50,6 +50,7 @@ import { useScheduleStore } from "../stores/schedule-store";
 import { useTreatmentStore } from "../stores/treatment-store";
 import { useWalletStore } from "../stores/wallet-store";
 import { uploadFile } from "@/services/upload-service";
+import profilePreviewImage from "@/assets/therapist-dashboard/therapist-profile-management-image-3.webp";
 
 const money = new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" });
 const moneyCompact = new Intl.NumberFormat("vi-VN", { notation: "compact", maximumFractionDigits: 1 });
