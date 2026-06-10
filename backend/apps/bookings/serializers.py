@@ -73,9 +73,15 @@ class BookingCreateSerializer(serializers.ModelSerializer):
         return value
 
     def validate(self, attrs):
-        treatment = Treatment.objects.get(id=attrs["treatment_id"])
+        from apps.treatments.models import Treatment
+
+        try:
+            treatment = Treatment.objects.get(id=attrs["treatment_id"])
+        except Treatment.DoesNotExist:
+            raise serializers.ValidationError("Liệu trình không tồn tại")
+
         if treatment.therapist_id != attrs["therapist_id"]:
-            raise serializers.ValidationError("Treatment không thuộc therapist này")
+            raise serializers.ValidationError("Liệu trình không thuộc therapist này")
         return attrs
 
     def create(self, validated_data):

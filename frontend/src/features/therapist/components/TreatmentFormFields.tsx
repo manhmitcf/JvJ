@@ -10,20 +10,42 @@ export function FormSection({ title, description, children }: { title: string; d
   );
 }
 
-export function TextField({ label, value }: { label: string; value: string }) {
+export function TextField({ label, value, onChange, placeholder, type = "text" }: {
+  label: string;
+  value: string;
+  onChange?: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  placeholder?: string;
+  type?: string;
+}) {
   return (
     <label className="block">
       <span className="mb-xs block text-body-sm font-black text-ink-primary">{label}</span>
-      <input className="h-12 w-full rounded-2xl border border-botanical-border bg-white px-md text-body-sm font-semibold text-ink-primary outline-none focus:border-primary focus:ring-4 focus:ring-soft-mint" value={value} readOnly />
+      <input
+        type={type}
+        className="h-12 w-full rounded-2xl border border-botanical-border bg-white px-md text-body-sm font-semibold text-ink-primary outline-none focus:border-primary focus:ring-4 focus:ring-soft-mint"
+        value={value}
+        onChange={onChange}
+        placeholder={placeholder}
+      />
     </label>
   );
 }
 
-export function TextArea({ label, value }: { label: string; value: string }) {
+export function TextArea({ label, value, onChange, placeholder }: {
+  label: string;
+  value: string;
+  onChange?: (e: React.ChangeEvent<HTMLTextAreaElement>) => void;
+  placeholder?: string;
+}) {
   return (
     <label className="block">
       <span className="mb-xs block text-body-sm font-black text-ink-primary">{label}</span>
-      <textarea className="min-h-28 w-full rounded-2xl border border-botanical-border bg-white px-md py-sm text-body-sm font-semibold text-ink-primary outline-none focus:border-primary focus:ring-4 focus:ring-soft-mint" value={value} readOnly />
+      <textarea
+        className="min-h-28 w-full rounded-2xl border border-botanical-border bg-white px-md py-sm text-body-sm font-semibold text-ink-primary outline-none focus:border-primary focus:ring-4 focus:ring-soft-mint"
+        value={value}
+        onChange={onChange}
+        placeholder={placeholder}
+      />
     </label>
   );
 }

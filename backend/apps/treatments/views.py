@@ -1,7 +1,8 @@
 """Treatment views: public listing/detail, therapist CRUD."""
 from rest_framework import generics, permissions, status
-from rest_framework.exceptions import PermissionDenied
+from rest_framework.exceptions import PermissionDenied, NotFound
 from rest_framework.response import Response
+from rest_framework.views import APIView
 
 from apps.common.pagination import StandardPagination
 
@@ -119,4 +120,45 @@ class TreatmentDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
         return Response(
             {"data": {"message": "Liệu trình đã được xóa"}},
             status=status.HTTP_200_OK,
+        )
+
+
+class TreatmentAvailableSlotsAPIView(APIView):
+    """GET /api/v1/treatments/:id/available-slots/ — Available time slots for a treatment."""
+
+    permission_classes = [permissions.AllowAny]
+
+    def get(self, request, id):
+        try:
+            treatment = Treatment.objects.select_related("therapist", "spa").get(id=id)
+        except Treatment.DoesNotExist:
+            raise NotFound("Không tìm thấy liệu trình")
+
+        slots = treatment.time_slots.filter(
+            status="available",
+            date__gte=request.query_params.get("from_date", ""),
+        ).select_related("therapist").order_by("date", "start_time")
+
+        # Filter by from_date if provided
+        from_date = request.query_params.get("from_date")
+        if from_date:
+            slots = slots.filter(date__gte=from_date)
+
+        return Response(
+            {
+                "data": {
+                    "treatment": TreatmentPublicSerializer(treatment).data,
+                    "slots": [
+                        {
+                            "id": str(slot.id),
+                            "date": slot.date,
+                            "start_time": slot.start_time,
+                            "end_time": slot.end_time,
+                            "therapist_id": str(slot.therapist_id),
+                            "therapist_name": slot.therapist.full_name,
+                        }
+                        for slot in slots
+                    ],
+                }
+            }
         )

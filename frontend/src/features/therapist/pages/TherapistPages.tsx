@@ -31,13 +31,14 @@ import {
 } from "lucide-react";
 import { Link, useParams, useNavigate } from "react-router-dom";
 import { cn } from "@/utils/cn";
+import { SlotDetailDialog } from "../components/SlotDetailDialog";
 import { BookingDetailDrawer } from "../components/BookingDetailDrawer";
 import { BookingRequestCard } from "../components/BookingRequestCard";
 import { DashboardMetrics } from "../components/DashboardMetrics";
 import { OnlineToggle } from "../components/OnlineToggle";
 import { RejectBookingDialog } from "../components/RejectBookingDialog";
 import { ScheduleCalendar } from "../components/ScheduleCalendar";
-import { SlotFormDialog } from "../components/SlotFormDialog";
+import { SlotFormDialog, SlotList } from "../components/SlotFormDialog";
 import { TreatmentCard } from "../components/TreatmentCard";
 import { TreatmentForm } from "../components/TreatmentForm";
 import { AvailabilityToggle, FormSection, SelectField, TextArea, TextField, TreatmentMediaFields } from "../components/TreatmentFormFields";
@@ -53,6 +54,16 @@ import { uploadFile } from "@/services/upload-service";
 
 const money = new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" });
 const moneyCompact = new Intl.NumberFormat("vi-VN", { notation: "compact", maximumFractionDigits: 1 });
+
+// Placeholder avatar URLs for TodayAppointments
+const PLACEHOLDER_AVATARS = [
+  "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='64' height='64' viewBox='0 0 64 64'%3E%3Crect fill='%23005c55' width='64' height='64' rx='12'/%3E%3Ctext x='32' y='38' font-size='24' text-anchor='middle' fill='white'%3E👤%3C/text%3E%3C/svg%3E",
+  "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='64' height='64' viewBox='0 0 64 64'%3E%3Crect fill='%230f766e' width='64' height='64' rx='12'/%3E%3Ctext x='32' y='38' font-size='24' text-anchor='middle' fill='white'%3E👤%3C/text%3E%3C/svg%3E",
+];
+
+// Placeholder images for components
+const PLACEHOLDER_SCHEDULE_IMAGE = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='200' viewBox='0 0 400 200'%3E%3Crect fill='%23005c55' width='400' height='200'/%3E%3Ctext x='200' y='100' font-size='48' text-anchor='middle' fill='white'%3E📅%3C/text%3E%3C/svg%3E";
+const PLACEHOLDER_BOOKING_IMAGE = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200' viewBox='0 0 200 200'%3E%3Crect fill='%230f766e' width='200' height='200' rx='16'/%3E%3Ctext x='100' y='110' font-size='64' text-anchor='middle' fill='white'%3E📋%3C/text%3E%3C/svg%3E";
 
 function PageShell({ children }: { children: React.ReactNode }) {
   return <div className="mx-auto max-w-[1440px] space-y-xl pb-xl">{children}</div>;
@@ -101,6 +112,7 @@ function statusLabel(status: string) {
 
 export function TherapistHomePage() {
   const { metrics, todayAppointments, isLoading, error, fetchDashboard, toggleOnline } = useDashboardStore();
+  const [selectedAppointmentId, setSelectedAppointmentId] = useState<string | null>(null);
 
   useEffect(() => {
     void fetchDashboard();
@@ -115,6 +127,7 @@ export function TherapistHomePage() {
 
   const todayAppointmentCount = metrics?.todayAppointmentCount ?? todayAppointments.length;
   const therapistName = "Nam";
+  const selectedAppointment = todayAppointments.find((a) => a.id === selectedAppointmentId);
 
   return (
     <PageShell>
@@ -125,21 +138,40 @@ export function TherapistHomePage() {
       <div className="grid gap-lg xl:grid-cols-[minmax(0,1.45fr)_minmax(320px,0.85fr)]">
         <TodayAppointments
           appointments={todayAppointments}
-          images={[dashboardCustomerA, dashboardCustomerB, bookingImageA, bookingImageB]}
+          images={PLACEHOLDER_AVATARS}
+          onViewDetails={(id) => setSelectedAppointmentId((prev) => (prev === id ? null : id))}
         />
 
         <section className="space-y-md">
-          <div className="rounded-[2rem] border border-botanical-border bg-white p-lg shadow-stitch-soft">
-            <h2 className="text-xl font-black text-ink-primary">Thao tác nhanh</h2>
-            <div className="mt-md grid gap-sm">
-              {[['Quản lý liệu trình', '/therapist/treatments', Sparkles], ['Cập nhật lịch rảnh', '/therapist/schedule', CalendarDays], ['Duyệt lịch mới', '/therapist/bookings', FileText]].map(([label, to, Icon]) => (
-                <Link key={label as string} to={to as string} className="flex items-center justify-between rounded-2xl border border-botanical-border bg-warm-bg p-md font-black text-ink-primary transition hover:border-primary hover:bg-soft-mint">
-                  <span className="inline-flex items-center gap-sm"><Icon className="h-5 w-5 text-primary" />{label as string}</span>
-                  <ArrowRight className="h-4 w-4 text-primary" />
-                </Link>
-              ))}
+          {selectedAppointment ? (
+            <div className="rounded-[2rem] border border-botanical-border bg-white p-lg shadow-stitch-soft">
+              <h2 className="mb-sm text-xl font-black text-ink-primary">Chi tiết lịch hẹn</h2>
+              <div className="space-y-xs text-body-sm font-semibold text-sage-secondary">
+                <p><span className="font-black text-ink-primary">{selectedAppointment.code}</span></p>
+                <p>{selectedAppointment.customerName} · {selectedAppointment.treatmentName}</p>
+                <p>{selectedAppointment.startTime} – {selectedAppointment.endTime}</p>
+                <p>{selectedAppointment.address}</p>
+                <div className="mt-sm">
+                  <StatusBadge tone={selectedAppointment.status === "pending" ? "amber" : selectedAppointment.status === "confirmed" ? "teal" : "slate"}>
+                    {selectedAppointment.status === "pending" ? "Chờ xác nhận" : selectedAppointment.status === "confirmed" ? "Đã xác nhận" : selectedAppointment.status}
+                  </StatusBadge>
+                </div>
+              </div>
+              <SecondaryButton onClick={() => setSelectedAppointmentId(null)} className="mt-md w-full">Đóng</SecondaryButton>
             </div>
-          </div>
+          ) : (
+            <div className="rounded-[2rem] border border-botanical-border bg-white p-lg shadow-stitch-soft">
+              <h2 className="text-xl font-black text-ink-primary">Thao tác nhanh</h2>
+              <div className="mt-md grid gap-sm">
+                {[['Quản lý liệu trình', '/therapist/treatments', Sparkles], ['Cập nhật lịch rảnh', '/therapist/schedule', CalendarDays], ['Duyệt lịch mới', '/therapist/bookings', FileText]].map(([label, to, Icon]) => (
+                  <Link key={label as string} to={to as string} className="flex items-center justify-between rounded-2xl border border-botanical-border bg-warm-bg p-md font-black text-ink-primary transition hover:border-primary hover:bg-soft-mint">
+                    <span className="inline-flex items-center gap-sm"><Icon className="h-5 w-5 text-primary" />{label as string}</span>
+                    <ArrowRight className="h-4 w-4 text-primary" />
+                  </Link>
+                ))}
+              </div>
+            </div>
+          )}
           <div className="rounded-[2rem] border border-primary/20 bg-soft-mint p-lg shadow-stitch-soft">
             <h2 className="text-xl font-black text-ink-primary">Khu vực phục vụ</h2>
             <p className="mt-sm text-body-sm font-medium text-sage-secondary">Hải Châu, Thanh Khê, Sơn Trà và Ngũ Hành Sơn đang có nhu cầu cao hôm nay.</p>
@@ -259,15 +291,53 @@ export function TherapistTreatmentFormPage() {
 }
 
 export function TherapistSchedulePage() {
-  const { slots, fetchSchedule, createSlot, deleteSlot } = useScheduleStore();
+  const { slots, fetchSchedule, createSlot, deleteSlot, updateSlot } = useScheduleStore();
+  const { bookings, fetchBookings, findBooking } = useBookingStore();
+  const [weekOffset, setWeekOffset] = useState(0);
+  const [selectedSlot, setSelectedSlot] = useState<import("@/types/schedule").TimeSlot | null>(null);
+  const [selectedBooking, setSelectedBooking] = useState<import("@/types/booking").Booking | undefined>(undefined);
+
+  // Calculate week dates based on offset
+  const today = new Date();
+  const baseDate = new Date(today);
+  baseDate.setDate(today.getDate() + weekOffset * 7);
+
+  const getWeekDates = (base: Date) => {
+    const dayOfWeek = base.getDay();
+    const monday = new Date(base);
+    monday.setDate(base.getDate() - (dayOfWeek === 0 ? 6 : dayOfWeek - 1));
+
+    const formatDate = (d: Date) => d.toISOString().split("T")[0];
+    return {
+      start: formatDate(monday),
+      end: formatDate(new Date(monday.getTime() + 6 * 24 * 60 * 60 * 1000)),
+      dates: Array.from({ length: 7 }, (_, i) => {
+        const date = new Date(monday.getTime() + i * 24 * 60 * 60 * 1000);
+        return formatDate(date);
+      }),
+    };
+  };
+
+  const weekDates = getWeekDates(baseDate);
 
   useEffect(() => {
-    void fetchSchedule("2026-06-01", "2026-06-07");
-  }, [fetchSchedule]);
+    void fetchSchedule(weekDates.start, weekDates.end);
+    void fetchBookings();
+  }, [weekOffset, fetchSchedule, fetchBookings, weekDates.start, weekDates.end]);
 
   const availableCount = slots.filter((slot) => slot.isAvailable && !slot.bookingId).length;
   const bookedCount = slots.filter((slot) => slot.bookingId).length;
   const lockedCount = slots.filter((slot) => !slot.isAvailable && !slot.bookingId).length;
+
+  const handleToggleAvailability = async (slotId: string, isAvailable: boolean) => {
+    await updateSlot(slotId, { isAvailable });
+  };
+
+  const handleSlotClick = (slot: import("@/types/schedule").TimeSlot) => {
+    const booking = slot.bookingId ? findBooking(slot.bookingId) : undefined;
+    setSelectedSlot((prev) => (prev?.id === slot.id ? null : slot));
+    setSelectedBooking(booking);
+  };
 
   return (
     <PageShell>
@@ -275,7 +345,6 @@ export function TherapistSchedulePage() {
         eyebrow="Time-slot Management"
         title="Lịch làm việc"
         description="Cập nhật khung giờ rảnh để khách hàng đặt lịch chính xác và hạn chế trùng lịch."
-        action={<PrimaryButton><Plus className="h-5 w-5" /> Thêm khung giờ</PrimaryButton>}
       />
 
       <div className="grid gap-lg md:grid-cols-4">
@@ -287,37 +356,79 @@ export function TherapistSchedulePage() {
 
       <div className="flex flex-col gap-md rounded-[2rem] border border-botanical-border bg-white p-md shadow-stitch-soft lg:flex-row lg:items-center lg:justify-between">
         <div className="flex flex-wrap gap-sm">
-          {['Tuần trước', 'Hôm nay', 'Tuần sau'].map((item, index) => <SecondaryButton key={item} className={index === 1 ? "border-primary bg-soft-mint text-primary" : undefined}>{item}</SecondaryButton>)}
+          <SecondaryButton onClick={() => setWeekOffset((prev) => prev - 1)}>Tuần trước</SecondaryButton>
+          <SecondaryButton onClick={() => setWeekOffset(0)} className={weekOffset === 0 ? "border-primary bg-soft-mint text-primary" : undefined}>Hôm nay</SecondaryButton>
+          <SecondaryButton onClick={() => setWeekOffset((prev) => prev + 1)}>Tuần sau</SecondaryButton>
         </div>
-        <p className="text-body-sm font-black text-ink-primary">Tuần 27/05 – 02/06</p>
+        <p className="text-body-sm font-black text-ink-primary">
+          Tuần {weekDates.dates[0].split("-").slice(1).join("/")} – {weekDates.dates[6].split("-").slice(1).join("/")}
+        </p>
       </div>
 
       <div className="grid gap-lg xl:grid-cols-[minmax(0,1fr)_360px]">
-        <ScheduleCalendar slots={slots} />
+        <ScheduleCalendar
+          slots={slots}
+          weekDates={weekDates.dates}
+          onWeekChange={(direction) => {
+            if (direction === "prev") setWeekOffset((prev) => prev - 1);
+            else if (direction === "next") setWeekOffset((prev) => prev + 1);
+            else setWeekOffset(0);
+          }}
+          currentWeekOffset={weekOffset}
+          onSlotClick={handleSlotClick}
+        />
 
         <aside className="space-y-lg">
           <SlotFormDialog
-            image={scheduleTherapistImage}
-            onCreate={() => void createSlot({ date: "2026-06-03", startTime: "08:00", endTime: "09:00" })}
+            image={PLACEHOLDER_SCHEDULE_IMAGE}
+            slots={slots}
+            onCreate={createSlot}
+            onDelete={deleteSlot}
+            onToggleAvailability={handleToggleAvailability}
+            onSuccess={() => void fetchSchedule(weekDates.start, weekDates.end)}
           />
-          {slots.length > 0 && <SecondaryButton onClick={() => void deleteSlot(slots[0].id)}><Trash2 className="h-4 w-4" /> Xóa slot đầu</SecondaryButton>}
+          <SlotList
+            slots={slots}
+            onDelete={(id) => { deleteSlot(id); setSelectedSlot((prev) => (prev?.id === id ? null : prev)); }}
+            onToggleAvailability={handleToggleAvailability}
+          />
         </aside>
       </div>
+
+      <SlotDetailDialog
+        slot={selectedSlot}
+        booking={selectedBooking}
+        onClose={() => setSelectedSlot(null)}
+        onToggleAvailability={(slotId, isAvailable) => void handleToggleAvailability(slotId, isAvailable)}
+        onDelete={(slotId) => { deleteSlot(slotId); setSelectedSlot(null); }}
+      />
     </PageShell>
   );
 }
 
 export function TherapistBookingsPage() {
-  const { bookings: storeBookings, fetchBookings, approveBooking, rejectBooking } = useBookingStore();
+  const { bookings: storeBookings, fetchBookings, approveBooking, rejectBooking, startBooking, completeBooking } = useBookingStore();
   const [searchQuery, setSearchQuery] = useState("");
   const [activeTab, setActiveTab] = useState<"all" | "pending" | "confirmed" | "in_progress" | "completed">("pending");
   const [rejectDialogOpen, setRejectDialogOpen] = useState(false);
+  const [selectedBookingId, setSelectedBookingId] = useState<string | null>(null);
   const [selectedBookingForReject, setSelectedBookingForReject] = useState<string | null>(null);
   const navigate = useNavigate();
 
   useEffect(() => {
     void fetchBookings();
   }, [fetchBookings]);
+
+  // Auto-select first booking when tab changes
+  useEffect(() => {
+    const filtered = storeBookings.filter((b) => activeTab === "all" || b.status === activeTab);
+    if (filtered.length > 0) {
+      setSelectedBookingId((prev) => {
+        const firstId = filtered[0].id;
+        return prev === firstId ? prev : firstId;
+      });
+    }
+  }, [activeTab, storeBookings]);
 
   // Filter bookings theo tab
   const tabFilteredBookings = storeBookings.filter((booking) => {
@@ -341,7 +452,7 @@ export function TherapistBookingsPage() {
   const confirmedCount = storeBookings.filter((booking) => booking.status === "confirmed").length;
   const inProgressCount = storeBookings.filter((booking) => booking.status === "in_progress").length;
   const completedCount = storeBookings.filter((booking) => booking.status === "completed").length;
-  const selectedBooking = pageBookings[0];
+  const selectedBooking = storeBookings.find((b) => b.id === selectedBookingId) ?? pageBookings[0] ?? undefined;
 
   const handleReject = (reason: string) => {
     if (selectedBookingForReject) {
@@ -419,6 +530,7 @@ export function TherapistBookingsPage() {
                 treatmentName={getTreatmentName(booking)}
                 onApprove={(bookingId) => void approveBooking(bookingId)}
                 onReject={(bookingId) => openRejectDialog(bookingId)}
+                onViewDetails={(bookingId) => setSelectedBookingId((prev) => (prev === bookingId ? null : bookingId))}
               />
             ))
           )}
@@ -427,9 +539,11 @@ export function TherapistBookingsPage() {
         <div>
           <BookingDetailDrawer
             booking={selectedBooking}
-            image={bookingImageA}
+            image={PLACEHOLDER_BOOKING_IMAGE}
             customerName={getCustomerName(selectedBooking)}
             treatmentName={getTreatmentName(selectedBooking)}
+            onStart={(bookingId) => void startBooking(bookingId)}
+            onComplete={(bookingId) => void completeBooking(bookingId)}
           />
           {rejectDialogOpen && (
             <RejectBookingDialog
@@ -502,10 +616,10 @@ export function TherapistWalletPage() {
         />
         <MetricCard
           icon={Star}
-          label="Đánh giá"
-          value={rating > 0 ? rating.toFixed(1) : "0"}
-          hint="Điểm trung bình hiện tại"
-          tone="teal"
+          label="Chờ xác nhận"
+          value={String(pendingCount).padStart(2, "0")}
+          hint="Cần phản hồi sớm"
+          tone="amber"
         />
       </div>
 
@@ -527,10 +641,6 @@ export function TherapistWalletPage() {
           <div className="rounded-2xl border border-botanical-border bg-white p-md">
             <p className="text-label-caption font-black text-sage-secondary">Số buổi</p>
             <p className="text-2xl font-black text-ink-primary">{completedBookings}</p>
-          </div>
-          <div className="rounded-2xl border border-botanical-border bg-white p-md">
-            <p className="text-label-caption font-black text-sage-secondary">Đang chờ</p>
-            <p className="text-2xl font-black text-pending-amber">{pendingCount}</p>
           </div>
         </div>
       </section>
@@ -591,7 +701,6 @@ export function TherapistWalletPage() {
           ) : (
             <p>Chưa có buổi phục vụ nào hoàn tất trong tháng này.</p>
           )}
-          <p>Doanh thu tháng: <span className="font-black text-primary">{money.format(monthlyRevenue)}</span></p>
           <p>Đánh giá trung bình: <span className="font-black text-ink-primary">{rating > 0 ? rating.toFixed(1) : "0.0"} ★</span></p>
         </div>
       </section>

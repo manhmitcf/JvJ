@@ -11,6 +11,7 @@ export function BookingRequestCard({
   treatmentName,
   onApprove,
   onReject,
+  onViewDetails,
 }: {
   booking: Booking;
   image: string;
@@ -18,6 +19,7 @@ export function BookingRequestCard({
   treatmentName: string;
   onApprove: (bookingId: string) => void;
   onReject: (bookingId: string) => void;
+  onViewDetails?: (bookingId: string) => void;
 }) {
   return (
     <article className="rounded-[2rem] border border-botanical-border bg-white p-lg shadow-stitch-soft transition hover:border-primary">
@@ -42,7 +44,7 @@ export function BookingRequestCard({
         <div className="flex flex-wrap gap-sm lg:flex-col">
           {booking.status === "pending" && <PrimaryButton onClick={() => onApprove(booking.id)}><CheckCircle2 className="h-4 w-4" /> Xác nhận</PrimaryButton>}
           {booking.status === "pending" && <SecondaryButton onClick={() => onReject(booking.id)} className="text-[#B91C1C]"><XCircle className="h-4 w-4" /> Từ chối</SecondaryButton>}
-          <SecondaryButton>Xem chi tiết</SecondaryButton>
+          <SecondaryButton onClick={() => onViewDetails?.(booking.id)}>Xem chi tiết</SecondaryButton>
         </div>
       </div>
     </article>

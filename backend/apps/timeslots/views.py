@@ -1,6 +1,7 @@
 """TimeSlot views: CRUD, bulk create, availability listing."""
 from datetime import datetime, timedelta
 
+from django.db import models
 from django_filters import rest_framework as filters
 from rest_framework import generics, permissions, status
 from rest_framework.response import Response
@@ -13,15 +14,17 @@ from .serializers import BulkTimeSlotSerializer, TimeSlotCreateSerializer, TimeS
 
 
 class TimeSlotFilter(filters.FilterSet):
-    """Custom filter for TimeSlot with proper UUID handling."""
+    """Custom filter for TimeSlot. therapist/treatment handled in view for null-treatment support."""
+
     therapist = filters.UUIDFilter(field_name="therapist__id")
     treatment = filters.UUIDFilter(field_name="treatment__id")
+    spa = filters.UUIDFilter(field_name="treatment__spa__id")
     status = filters.CharFilter(field_name="status")
     date = filters.DateFilter(field_name="date")
 
     class Meta:
         model = TimeSlot
-        fields = ["therapist", "treatment", "status", "date"]
+        fields = ["therapist", "treatment", "spa", "status", "date"]
 
 
 class TimeSlotListAPIView(generics.ListAPIView):
@@ -29,10 +32,40 @@ class TimeSlotListAPIView(generics.ListAPIView):
     permission_classes = [permissions.AllowAny]
     serializer_class = TimeSlotSerializer
     pagination_class = StandardPagination
-    filterset_class = TimeSlotFilter
+    filter_backends = []  # Filters handled manually in get_queryset below
 
     def get_queryset(self):
-        return TimeSlot.objects.filter(status="available").select_related("therapist", "treatment")
+        params = self.request.query_params
+        therapist_id = params.get("therapist")
+        treatment_id = params.get("treatment")
+
+        queryset = TimeSlot.objects.select_related(
+            "therapist", "treatment", "treatment__spa"
+        )
+
+        # Handle therapist + treatment together so we can include null-treatment slots.
+        if therapist_id and treatment_id:
+            queryset = queryset.filter(
+                models.Q(therapist__id=therapist_id)
+                & (
+                    models.Q(treatment__id=treatment_id)
+                    | models.Q(treatment__isnull=True)
+                )
+            )
+        elif therapist_id:
+            queryset = queryset.filter(therapist__id=therapist_id)
+        elif treatment_id:
+            queryset = queryset.filter(treatment__id=treatment_id)
+
+        # Apply remaining filters directly
+        if params.get("date"):
+            queryset = queryset.filter(date=params["date"])
+        if params.get("status"):
+            queryset = queryset.filter(status=params["status"])
+        if params.get("spa"):
+            queryset = queryset.filter(treatment__spa__id=params["spa"])
+
+        return queryset
 
 
 class TimeSlotDetailAPIView(generics.RetrieveAPIView):
@@ -66,10 +99,13 @@ class TherapistTimeSlotCreateView(generics.CreateAPIView):
 
 
 class TherapistTimeSlotUpdateView(generics.UpdateAPIView):
-    """PUT /api/v1/therapist/timeslots/:id/ — Update timeslot của mình."""
+    """PUT/PATCH /api/v1/therapist/timeslots/:id/ — Update timeslot của mình."""
+
     permission_classes = [permissions.IsAuthenticated]
     serializer_class = TimeSlotCreateSerializer
     lookup_field = "id"
+
+    http_method_names = ["get", "put", "patch", "head", "options"]
 
     def get_queryset(self):
         return TimeSlot.objects.filter(therapist=self.request.user)
@@ -79,6 +115,14 @@ class TherapistTimeSlotUpdateView(generics.UpdateAPIView):
         if instance.status == "booked":
             raise PermissionError("Không thể sửa slot đã có booking")
         serializer.save()
+
+    def update(self, request, *args, **kwargs):
+        partial = kwargs.pop("partial", False)
+        instance = self.get_object()
+        serializer = self.get_serializer(instance, data=request.data, partial=partial)
+        serializer.is_valid(raise_exception=True)
+        self.perform_update(serializer)
+        return Response({"data": TimeSlotSerializer(instance).data}, status=status.HTTP_200_OK)
 
 
 class TherapistTimeSlotDeleteView(generics.DestroyAPIView):

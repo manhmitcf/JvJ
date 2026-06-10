@@ -13,13 +13,14 @@ type BookingStore = {
   isLoading: boolean;
   error: string | null;
   fetchBookings: () => Promise<void>;
+  findBooking: (id: string) => Booking | undefined;
   approveBooking: (bookingId: string) => Promise<void>;
   rejectBooking: (bookingId: string, reason: string) => Promise<void>;
   startBooking: (bookingId: string) => Promise<void>;
   completeBooking: (bookingId: string) => Promise<void>;
 };
 
-export const useBookingStore = create<BookingStore>((set) => ({
+export const useBookingStore = create<BookingStore>((set, get) => ({
   bookings: [],
   isLoading: false,
   error: null,
@@ -33,6 +34,8 @@ export const useBookingStore = create<BookingStore>((set) => ({
       set({ error: (error as Error).message, isLoading: false });
     }
   },
+
+  findBooking: (id) => get().bookings.find((b) => b.id === id),
 
   approveBooking: async (bookingId) => {
     set({ isLoading: true, error: null });

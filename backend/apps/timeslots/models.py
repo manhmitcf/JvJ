@@ -24,6 +24,8 @@ class TimeSlot(models.Model):
         "treatments.Treatment",
         on_delete=models.CASCADE,
         related_name="time_slots",
+        null=True,
+        blank=True,
     )
     date = models.DateField()
     start_time = models.TimeField()

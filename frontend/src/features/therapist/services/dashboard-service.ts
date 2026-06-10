@@ -6,6 +6,7 @@ export type DashboardMetrics = {
   rating: number;
   isOnline: boolean;
   monthlyRevenue: number;
+  paidRevenue: number;
   todayAppointmentCount: number;
 };
 
@@ -34,6 +35,7 @@ export type DashboardApiResponse = {
     status: string;
   }>;
   monthly_revenue: number;
+  paid_revenue: number;
   rating: number;
 };
 
@@ -52,6 +54,7 @@ export async function getDashboardMetrics(): Promise<DashboardMetrics> {
     rating: dashboard.rating,
     isOnline: profile,
     monthlyRevenue: dashboard.monthly_revenue,
+    paidRevenue: dashboard.paid_revenue,
     todayAppointmentCount: dashboard.today_appointments.length,
   };
 }

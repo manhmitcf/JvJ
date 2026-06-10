@@ -346,6 +346,14 @@ class TherapistDashboardView(APIView):
         ).aggregate(total=Sum("total_amount"))
         monthly_revenue = monthly_revenue_result["total"] or 0
 
+        # Paid revenue this month (bookings whose payment was completed this month)
+        paid_revenue_result = Booking.objects.filter(
+            therapist=therapist,
+            payment__status="success",
+            payment__completed_at__gte=month_start,
+        ).aggregate(total=Sum("total_amount"))
+        paid_revenue = paid_revenue_result["total"] or 0
+
         # Rating from profile
         rating = 0.0
         if hasattr(therapist, "therapist_profile"):
@@ -357,6 +365,7 @@ class TherapistDashboardView(APIView):
                 "completed_count": completed_count,
                 "today_appointments": today_appointments,
                 "monthly_revenue": int(monthly_revenue),
+                "paid_revenue": int(paid_revenue),
                 "rating": rating,
             }
         })

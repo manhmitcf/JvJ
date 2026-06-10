@@ -175,6 +175,9 @@ export async function logout(): Promise<void> {
   // Xóa tokens khỏi localStorage
   localStorage.removeItem("access_token");
   localStorage.removeItem("refresh_token");
+
+  // Xóa auth state trong Zustand store
+  useAuthStore.getState().logout();
 }
 
 export async function getMe(): Promise<AuthUser> {

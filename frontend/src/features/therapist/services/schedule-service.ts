@@ -61,6 +61,7 @@ export async function createTimeSlot(data: { date: string; startTime: string; en
     body: JSON.stringify(body),
   });
 
+  // Backend returns the created object directly
   return mapApiToTimeSlot(result);
 }
 
@@ -76,7 +77,7 @@ export async function updateTimeSlot(
   }
 
   const result = await apiFetch<TimeSlotApiResponse>(`/timeslots/therapist/timeslots/${slotId}/`, {
-    method: "PUT",
+    method: "PATCH",
     body: JSON.stringify(body),
   });
   return mapApiToTimeSlot(result);

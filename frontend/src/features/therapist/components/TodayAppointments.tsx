@@ -6,9 +6,11 @@ import { SecondaryButton, StatusBadge } from "./shared";
 export function TodayAppointments({
   appointments,
   images,
+  onViewDetails,
 }: {
   appointments: TodayAppointment[];
   images: string[];
+  onViewDetails?: (id: string) => void;
 }) {
   return (
     <section className="rounded-[2rem] border border-botanical-border bg-white p-lg shadow-stitch-soft">
@@ -24,7 +26,14 @@ export function TodayAppointments({
           <p className="py-lg text-center text-body-md font-medium text-sage-secondary">Chưa có lịch hẹn nào hôm nay.</p>
         ) : (
           appointments.map((booking, index) => (
-            <div key={booking.id} className="flex flex-col gap-md rounded-3xl border border-botanical-border bg-warm-bg p-md md:flex-row md:items-center">
+            <div
+              key={booking.id}
+              role="button"
+              tabIndex={0}
+              onClick={() => onViewDetails?.(booking.id)}
+              onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") onViewDetails?.(booking.id); }}
+              className="flex cursor-pointer flex-col gap-md rounded-3xl border border-botanical-border bg-warm-bg p-md transition hover:border-primary hover:shadow-md md:flex-row md:items-center"
+            >
               <img src={images[index] ?? images[0]} alt={booking.customerName} className="h-16 w-16 rounded-2xl object-cover" />
               <div className="min-w-0 flex-1">
                 <div className="flex flex-wrap items-center gap-sm">
@@ -37,7 +46,7 @@ export function TodayAppointments({
                   <span className="inline-flex items-center gap-1"><MapPin className="h-3.5 w-3.5" /> {booking.address}</span>
                 </div>
               </div>
-              <SecondaryButton>Xem chi tiết</SecondaryButton>
+              <SecondaryButton onClick={(e) => { e.stopPropagation(); onViewDetails?.(booking.id); }}>Xem chi tiết</SecondaryButton>
             </div>
           ))
         )}

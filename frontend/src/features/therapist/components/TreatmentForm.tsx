@@ -13,6 +13,7 @@ import { uploadFile } from "@/services/upload-service";
 import { useTreatmentStore } from "../stores/treatment-store";
 import { ImageUploadButton } from "@/components/ui/image-upload-button";
 import { ImagePreview } from "@/components/ui/image-preview";
+import { useInvalidateTreatments } from "@/hooks/use-invalidate-treatments";
 
 const initialForm: TreatmentFormInput = {
   name: "",
@@ -28,6 +29,7 @@ export function TreatmentForm({ treatmentId }: { treatmentId?: string }) {
   const navigate = useNavigate();
   const isEditMode = !!treatmentId;
   const { treatments, updateTreatment, deleteTreatment: deleteTreatmentFromStore, fetchTreatments } = useTreatmentStore();
+  const { invalidateAll } = useInvalidateTreatments();
 
   const [form, setForm] = useState<TreatmentFormInput>(initialForm);
   const [uploading, setUploading] = useState(false);
@@ -116,10 +118,16 @@ export function TreatmentForm({ treatmentId }: { treatmentId?: string }) {
         // Create new treatment
         await createTreatment(form);
       }
+      await invalidateAll();
       navigate("/therapist/treatments");
     } catch (err) {
-      const error = err as { response?: { data?: { error?: { message?: string } } }; message?: string };
-      setError(error.response?.data?.error?.message || "Có lỗi xảy ra. Vui lòng thử lại.");
+      // Handle both native fetch Error and axios-style error shapes
+      const fetchError = err as { message?: string; response?: { data?: { error?: { message?: string } } } };
+      const errorMsg =
+        fetchError.response?.data?.error?.message ||
+        fetchError.message ||
+        "Có lỗi xảy ra. Vui lòng thử lại.";
+      setError(errorMsg);
       console.error(isEditMode ? "Update treatment error:" : "Create treatment error:", err);
     } finally {
       setIsSubmitting(false);
@@ -133,6 +141,7 @@ export function TreatmentForm({ treatmentId }: { treatmentId?: string }) {
     setDeleteError(null);
     try {
       await deleteTreatmentFromStore(treatmentId);
+      await invalidateAll();
       navigate("/therapist/treatments");
     } catch (err) {
       const error = err as { response?: { data?: { error?: { message?: string } } }; message?: string };
