@@ -2,6 +2,38 @@
 # Su dung: .\docker-run.ps1
 # Chay tu root folder cua project
 
+function Wait-ForHttpReady {
+    param(
+        [string]$Name,
+        [string]$Url,
+        [int]$TimeoutSeconds = 30,
+        [int]$IntervalSeconds = 2
+    )
+
+    $deadline = (Get-Date).AddSeconds($TimeoutSeconds)
+
+    while ((Get-Date) -lt $deadline) {
+        $isRunning = docker inspect -f "{{.State.Running}}" $Name 2>$null
+        if ($LASTEXITCODE -ne 0 -or $isRunning -ne "true") {
+            Write-Host "$Name container da dung - checking logs..." -ForegroundColor Red
+            docker logs $Name --tail 50
+            return $false
+        }
+
+        try {
+            $response = Invoke-WebRequest -Uri $Url -UseBasicParsing -TimeoutSec 5
+            Write-Host "$Name OK (Status: $($response.StatusCode))" -ForegroundColor Green
+            return $true
+        } catch {
+            Start-Sleep -Seconds $IntervalSeconds
+        }
+    }
+
+    Write-Host "$Name chua san sang sau $TimeoutSeconds giay - checking logs..." -ForegroundColor Red
+    docker logs $Name --tail 50
+    return $false
+}
+
 Write-Host "=== STOPPING & CLEANING OLD CONTAINERS ===" -ForegroundColor Cyan
 
 # Stop va remove containers cu
@@ -21,11 +53,15 @@ $mediaPath = Join-Path $PSScriptRoot "media-uploads"
 New-Item -ItemType Directory -Path $mediaPath -Force | Out-Null
 Write-Host "Media uploads folder: $mediaPath" -ForegroundColor Gray
 
-Set-Location backend
+Push-Location (Join-Path $PSScriptRoot "backend")
 
 # Build backend image
 Write-Host "Building backend image..." -ForegroundColor Yellow
 docker build -t jvj-backend:latest .
+if ($LASTEXITCODE -ne 0) {
+    Pop-Location
+    throw "Build backend that bai"
+}
 
 # Run backend container
 Write-Host "Starting backend container..." -ForegroundColor Yellow
@@ -35,49 +71,47 @@ docker run -d `
   -v "${PSScriptRoot}\media-uploads:/app/media" `
   --env-file ../.env `
   jvj-backend:latest
+if ($LASTEXITCODE -ne 0) {
+    Pop-Location
+    throw "Start backend container that bai"
+}
 
 Write-Host "Waiting for backend to initialize..." -ForegroundColor Yellow
-Start-Sleep -Seconds 8
-
-# Verify backend
 Write-Host "Verifying backend..." -ForegroundColor Yellow
-try {
-    $response = Invoke-WebRequest -Uri "http://localhost:8000/api/v1/auth/login/" -UseBasicParsing -TimeoutSec 5
-    Write-Host "Backend OK (Status: $($response.StatusCode))" -ForegroundColor Green
-} catch {
-    Write-Host "Backend failed - checking logs..." -ForegroundColor Red
-    docker logs jvj-backend --tail 30
-}
+Wait-ForHttpReady -Name "jvj-backend" -Url "http://localhost:8000/admin/login/" -TimeoutSeconds 45 | Out-Null
+
+Pop-Location
 
 Write-Host ""
 Write-Host "=== BUILDING & RUNNING FRONTEND ===" -ForegroundColor Cyan
-Set-Location ..\frontend
+Push-Location (Join-Path $PSScriptRoot "frontend")
 
 # Build frontend image
 Write-Host "Building frontend image..." -ForegroundColor Yellow
 docker build -t jvj-frontend:latest .
+if ($LASTEXITCODE -ne 0) {
+    Pop-Location
+    throw "Build frontend that bai"
+}
 
 # Run frontend container voi volume mount cho hot reload
 Write-Host "Starting frontend container..." -ForegroundColor Yellow
 docker run -d `
   --name jvj-frontend `
   -p 5173:5173 `
-  -v "${PWD}/src:/app/src" `
+  -v "${PWD}\src:/app/src" `
   --env-file ../.env `
   jvj-frontend:latest
+if ($LASTEXITCODE -ne 0) {
+    Pop-Location
+    throw "Start frontend container that bai"
+}
 
 Write-Host "Waiting for frontend to initialize..." -ForegroundColor Yellow
-Start-Sleep -Seconds 5
-
-# Verify frontend
 Write-Host "Verifying frontend..." -ForegroundColor Yellow
-try {
-    $response = Invoke-WebRequest -Uri "http://localhost:5173/" -UseBasicParsing -TimeoutSec 5
-    Write-Host "Frontend OK (Status: $($response.StatusCode))" -ForegroundColor Green
-} catch {
-    Write-Host "Frontend failed - checking logs..." -ForegroundColor Red
-    docker logs jvj-frontend --tail 30
-}
+Wait-ForHttpReady -Name "jvj-frontend" -Url "http://localhost:5173/" -TimeoutSeconds 45 | Out-Null
+
+Pop-Location
 
 Write-Host ""
 Write-Host "=== CONTAINERS STATUS ===" -ForegroundColor Cyan
@@ -95,4 +129,4 @@ Write-Host "  Stop:     docker stop jvj-backend jvj-frontend" -ForegroundColor G
 Write-Host "  Remove:   docker rm jvj-backend jvj-frontend" -ForegroundColor Gray
 Write-Host "  Restart:  docker restart jvj-backend jvj-frontend" -ForegroundColor Gray
 
-Set-Location ..
+Set-Location $PSScriptRoot
