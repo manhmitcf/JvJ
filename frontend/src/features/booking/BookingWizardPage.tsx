@@ -25,6 +25,7 @@ import { LoadingState } from "@/components/shared/LoadingState";
 import { ErrorState } from "@/components/shared/ErrorState";
 import { useBookingWizardStore } from "@/features/booking/stores/booking-wizard-store";
 import { useSpaStore } from "@/features/spas/stores/spa-store";
+import { getSpaMapImage } from "@/features/spas/components/spa-assets";
 import { cn } from "@/utils/cn";
 import type { Treatment } from "@/types/treatment";
 import type { Therapist } from "@/types/therapist";
@@ -179,6 +180,7 @@ export function BookingWizardPage() {
               address={address}
               contactPhone={contactPhone}
               addressNote={addressNote}
+              bookingAddressImage={getSpaMapImage()}
               onSave={(addr, phone, note, save) => {
                 setAddress(addr, phone, note, save);
                 setCurrentStep(4);
@@ -593,12 +595,14 @@ function AddressStep({
   address,
   contactPhone,
   addressNote,
+  bookingAddressImage,
   onSave,
   onBack,
 }: {
   address: string;
   contactPhone: string;
   addressNote: string;
+  bookingAddressImage: string;
   onSave: (address: string, phone: string, note: string, save: boolean) => void;
   onBack: () => void;
 }) {
@@ -746,13 +750,24 @@ function ConfirmStep({
             <CheckCircle2 className="h-16 w-16 text-success-leaf" />
           </div>
         </div>
-        <div className="flex gap-md">
+        <div className="flex flex-col gap-md sm:flex-row">
           <Button onClick={onViewBooking} className="flex-1 rounded-xl shadow-md">
             Xem chi tiết lịch hẹn
           </Button>
-          <Link to="/app/appointments" className="inline-flex flex-1 items-center justify-center rounded-xl border border-botanical-border bg-white text-sm font-semibold transition-colors hover:bg-soft-mint">
+          <Link to="/app/appointments" className="inline-flex flex-1 items-center justify-center rounded-xl border border-botanical-border bg-white px-md py-sm text-sm font-semibold transition-colors hover:bg-soft-mint">
             Về danh sách lịch hẹn
           </Link>
+          <Button
+            variant="secondary"
+            onClick={() => {
+              void useBookingWizardStore.getState().reset();
+              void useBookingWizardStore.getState().loadTreatments();
+              void useBookingWizardStore.getState().loadTherapists();
+            }}
+            className="flex-1 rounded-xl"
+          >
+            Đặt lịch khác
+          </Button>
         </div>
       </StepCard>
     );

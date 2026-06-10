@@ -1,7 +1,7 @@
 /**
  * Profile service - Customer profile API.
  * GET /auth/me/ returns user info for current authenticated customer.
- * PATCH /auth/me/update/ updates user profile.
+ * PUT /auth/me/ updates user profile.
  */
 import { apiFetch } from "@/lib/api-client";
 import type { CustomerProfileDto } from "@/types/api";
@@ -35,8 +35,8 @@ export async function updateProfile(input: UpdateProfileInput): Promise<User> {
   if (input.phone !== undefined) body.phone = input.phone;
   if (input.avatar_url !== undefined) body.avatar_url = input.avatar_url;
 
-  const dto = await apiFetch<CustomerProfileDto>("/auth/me/update/", {
-    method: "PATCH",
+  const dto = await apiFetch<CustomerProfileDto>("/auth/me/", {
+    method: "PUT",
     body: JSON.stringify(body),
   });
 

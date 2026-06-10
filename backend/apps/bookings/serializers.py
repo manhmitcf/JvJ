@@ -79,29 +79,36 @@ class BookingCreateSerializer(serializers.ModelSerializer):
         return attrs
 
     def create(self, validated_data):
-        from django.db import transaction
+        from django.db import IntegrityError, transaction
 
         timeslot_id = validated_data.pop("timeslot_id")
         treatment_id = validated_data.pop("treatment_id")
         therapist_id = validated_data.pop("therapist_id")
 
-        with transaction.atomic():
-            timeslot = TimeSlot.objects.select_for_update().get(id=timeslot_id)
-            treatment = Treatment.objects.get(id=treatment_id)
-            therapist = treatment.therapist
+        for attempt in range(5):
+            try:
+                with transaction.atomic():
+                    timeslot = TimeSlot.objects.select_for_update().get(id=timeslot_id)
+                    treatment = Treatment.objects.get(id=treatment_id)
+                    therapist = treatment.therapist
+                    customer = self.context["request"].user
 
-            customer = self.context["request"].user
-
-            return Booking.objects.create_booking(
-                customer=customer,
-                therapist=therapist,
-                treatment=treatment,
-                timeslot=timeslot,
-                address=validated_data["address"],
-                contact_phone=validated_data["contact_phone"],
-                total_amount=treatment.price,
-                note=validated_data.get("note", ""),
-            )
+                    booking = Booking.objects.create_booking(
+                        customer=customer,
+                        therapist=therapist,
+                        treatment=treatment,
+                        timeslot=timeslot,
+                        address=validated_data["address"],
+                        contact_phone=validated_data["contact_phone"],
+                        total_amount=treatment.price,
+                        note=validated_data.get("note", ""),
+                    )
+                    return booking
+            except IntegrityError:
+                # Code collision - retry with new code
+                if attempt < 4:
+                    continue
+                raise
 
 
 class BookingActionSerializer(serializers.Serializer):

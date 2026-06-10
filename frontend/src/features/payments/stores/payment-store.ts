@@ -34,13 +34,27 @@ export const usePaymentStore = create<PaymentStore>((set, get) => ({
   loadBooking: async (bookingId) => {
     set({ booking: null, payment: null, currentBookingId: bookingId, isLoading: true, error: null, actionMessage: null });
     try {
-      const [booking, payment] = await Promise.all([
-        bookingService.getBooking(bookingId),
-        paymentService.getPayment(bookingId),
-      ]);
+      // Load booking first
+      const booking = await bookingService.getBooking(bookingId);
+      if (get().currentBookingId !== bookingId) return;
+      
+      if (!booking) {
+        set({ error: "Không tìm thấy lịch hẹn", isLoading: false, booking: null, payment: null });
+        return;
+      }
+      
+      // Then try to load payment (non-blocking)
+      let payment = null;
+      try {
+        payment = await paymentService.getPayment(bookingId);
+      } catch (paymentError) {
+        // Payment not found is OK - booking exists but no payment yet
+        console.debug("[PaymentStore] No payment found for booking:", bookingId);
+      }
+      
       if (get().currentBookingId !== bookingId) return;
       set({
-        booking: booking ? { ...booking } : null,
+        booking: { ...booking },
         payment: payment ? { ...payment } : null,
         isLoading: false
       });

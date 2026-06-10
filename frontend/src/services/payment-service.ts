@@ -53,7 +53,7 @@ export const paymentService = {
       const response = await apiClient.get<PaymentDto>(`/payments/${bookingId}/`);
       return mapPayment(response.data);
     } catch (error) {
-      if (error instanceof Error && error.message.includes("404")) {
+      if (error instanceof Error && (error.message.includes("404") || error.message.includes("NOT_FOUND"))) {
         return null;
       }
       throw error;

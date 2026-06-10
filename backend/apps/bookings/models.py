@@ -3,13 +3,31 @@ import uuid
 
 from django.conf import settings
 from django.core.validators import MinValueValidator
-from django.db import models
+from django.db import models, transaction
 from django.utils import timezone
 
 from .state_machine import validate_transition
 
 
 class BookingManager(models.Manager):
+    def _generate_unique_code(self) -> str:
+        """Generate a unique booking code with collision detection loop."""
+        last = self.order_by("-pk").first()
+        base_num = 1
+        if last:
+            try:
+                base_num = int(last.code.split("-")[1]) + 1
+            except (ValueError, IndexError):
+                base_num = 1
+
+        # Loop to handle race condition collisions
+        code = f"JVJ-{base_num:04d}"
+        while self.filter(code=code).exists():
+            base_num += 1
+            code = f"JVJ-{base_num:04d}"
+
+        return code
+
     def create_booking(
         self,
         customer,
@@ -22,11 +40,7 @@ class BookingManager(models.Manager):
         note="",
     ):
         """Tạo booking mới với code tự sinh và book timeslot."""
-        # Tự sinh booking code
-        last = self.order_by("-pk").first()
-        next_num = (int(last.code.split("-")[1]) + 1) if last else 1
-        code = f"JVJ-{next_num:04d}"
-
+        code = self._generate_unique_code()
         booking = self.create(
             code=code,
             customer=customer,
@@ -40,8 +54,6 @@ class BookingManager(models.Manager):
             status="pending",
             payment_status="unpaid",
         )
-
-        # Book timeslot
         timeslot.book()
         return booking
 

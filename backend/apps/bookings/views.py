@@ -65,6 +65,12 @@ class BookingCreateView(generics.CreateAPIView):
     serializer_class = BookingCreateSerializer
 
     def create(self, request, *args, **kwargs):
+        # Debug logging
+        print(f"[DEBUG] BookingCreateView.create() called")
+        print(f"[DEBUG] User: {request.user}")
+        print(f"[DEBUG] Auth: {request.auth}")
+        print(f"[DEBUG] Headers: {dict(request.headers)}")
+        
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         booking = serializer.save()
