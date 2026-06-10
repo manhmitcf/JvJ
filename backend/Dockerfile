@@ -20,9 +20,10 @@ COPY . /app/
 RUN mkdir -p /app/media/uploads && \
     chmod -R 755 /app/media
 
-# Copy và set execute permission cho entrypoint script
+# Copy và normalize line endings cho entrypoint script
 COPY docker-entrypoint.sh /app/
-RUN chmod +x /app/docker-entrypoint.sh
+RUN sed -i 's/\r$//' /app/docker-entrypoint.sh && \
+    chmod +x /app/docker-entrypoint.sh
 
 # Tạo non-root user và chuyển ownership
 RUN useradd -m -u 1000 jvjuser && \
