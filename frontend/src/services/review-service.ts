@@ -1,4 +1,4 @@
-import { apiClient, type PaginatedData } from "@/lib/api-client";
+import { apiClient, apiFetch, type PaginatedData } from "@/lib/api-client";
 import { type ReviewDto } from "@/types/api";
 import { mapReview } from "@/services/mappers/review-mapper";
 import { type Review } from "@/types/review";
@@ -40,12 +40,19 @@ export const reviewService = {
   },
 
   /**
-   * Check if a booking has a review.
-   * Backend does not expose a dedicated endpoint; returns null.
-   * Duplicate review validation happens server-side on create.
+   * Get review for a booking (customer only).
+   * GET /api/v1/reviews/bookings/:bookingId/
+   * Returns null if no review exists.
    */
-  async getReviewByBookingId(_bookingId: string): Promise<Review | null> {
-    return null;
+  async getReviewByBookingId(bookingId: string): Promise<Review | null> {
+    try {
+      const response = await apiFetch<ReviewDto | null>(`/reviews/bookings/${bookingId}/`);
+      if (!response) return null;
+      return mapReview(response);
+    } catch (err) {
+      console.warn(`[ReviewService] getReviewByBookingId(${bookingId}) error:`, err);
+      return null;
+    }
   },
 
   /**
@@ -62,5 +69,52 @@ export const reviewService = {
       tags: input.tags,
     });
     return mapReview(response.data);
+  },
+
+  /**
+   * Get review status for multiple bookings in one call (customer only).
+   * POST /api/v1/reviews/my/
+   * Body: { booking_ids: string[] }
+   * Returns: { data: { [bookingId]: ReviewDto | null } }
+   */
+  async getMyReviews(bookingIds: string[]): Promise<Record<string, Review | null>> {
+    type MyReviewsResponse = { data: Record<string, ReviewDto | null> };
+    const response = await apiFetch<MyReviewsResponse>("/reviews/my/", {
+      method: "POST",
+      body: JSON.stringify({ booking_ids: bookingIds }),
+    });
+    const result: Record<string, Review | null> = {};
+    for (const [bookingId, dto] of Object.entries(response.data)) {
+      result[bookingId] = dto ? mapReview(dto) : null;
+    }
+    return result;
+  },
+
+  /**
+   * Update an existing review.
+   * PATCH /api/v1/reviews/:id/
+   * Only the review owner can update.
+   */
+  async updateReview(input: {
+    id: string;
+    rating: 1 | 2 | 3 | 4 | 5;
+    comment: string;
+    tags: string[];
+  }): Promise<Review> {
+    const response = await apiClient.patch<ReviewDto>(`/reviews/${input.id}/`, {
+      rating: input.rating,
+      comment: input.comment,
+      tags: input.tags,
+    });
+    return mapReview(response.data);
+  },
+
+  /**
+   * Delete an existing review.
+   * DELETE /api/v1/reviews/:id/
+   * Only the review owner can delete.
+   */
+  async deleteReview(id: string): Promise<void> {
+    await apiClient.delete(`/reviews/${id}/`);
   },
 };

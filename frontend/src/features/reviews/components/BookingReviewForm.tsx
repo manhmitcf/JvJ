@@ -9,13 +9,15 @@ const quickTags: ReviewTag[] = ["Đúng giờ", "Tận tâm", "Dễ chịu", "S�
 type BookingReviewFormProps = {
   submitting: boolean;
   error: string | null;
+  initialValues?: { rating: 1 | 2 | 3 | 4 | 5; comment: string; tags: ReviewTag[] };
+  onCancel?: () => void;
   onSubmit: (payload: { rating: 1 | 2 | 3 | 4 | 5; comment: string; tags: ReviewTag[] }) => Promise<void>;
 };
 
-export function BookingReviewForm({ submitting, error, onSubmit }: BookingReviewFormProps) {
-  const [rating, setRating] = useState<1 | 2 | 3 | 4 | 5>(5);
-  const [comment, setComment] = useState("");
-  const [tags, setTags] = useState<ReviewTag[]>([]);
+export function BookingReviewForm({ submitting, error, initialValues, onCancel, onSubmit }: BookingReviewFormProps) {
+  const [rating, setRating] = useState<1 | 2 | 3 | 4 | 5>(initialValues?.rating ?? 5);
+  const [comment, setComment] = useState(initialValues?.comment ?? "");
+  const [tags, setTags] = useState<ReviewTag[]>(initialValues?.tags ?? []);
 
   function toggleTag(tag: ReviewTag) {
     setTags((currentTags) => (currentTags.includes(tag) ? currentTags.filter((item) => item !== tag) : [...currentTags, tag]));
@@ -56,9 +58,14 @@ export function BookingReviewForm({ submitting, error, onSubmit }: BookingReview
 
       {error ? <p className="rounded-xl border border-red-100 bg-red-50 px-3 py-2 text-sm font-medium text-red-700">{error}</p> : null}
 
-      <Button disabled={submitting} onClick={() => void onSubmit({ rating, comment, tags })} className="w-full">
-        {submitting ? "Đang gửi đánh giá..." : "Gửi đánh giá"}
-      </Button>
+      <div className="flex gap-3">
+        {onCancel && (
+          <Button variant="secondary" onClick={onCancel} className="flex-1">Hủy</Button>
+        )}
+        <Button disabled={submitting} onClick={() => void onSubmit({ rating, comment, tags })} className="flex-1">
+          {submitting ? "Đang gửi..." : "Gửi đánh giá"}
+        </Button>
+      </div>
     </div>
   );
 }

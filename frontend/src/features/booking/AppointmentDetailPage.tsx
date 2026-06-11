@@ -211,9 +211,11 @@ export function AppointmentDetailPage() {
   const [loading, setLoading] = useState(true);
   const [cancelModalOpen, setCancelModalOpen] = useState(false);
   const [reviewModalOpen, setReviewModalOpen] = useState(false);
+  const [isEditingReview, setIsEditingReview] = useState(false);
   const [cancelling, setCancelling] = useState(false);
   const [existingReview, setExistingReview] = useState<Review | null>(null);
   const [submittingReview, setSubmittingReview] = useState(false);
+  const [deletingReview, setDeletingReview] = useState(false);
   const [reviewError, setReviewError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -222,7 +224,7 @@ export function AppointmentDetailPage() {
 
   useEffect(() => {
     if (!booking) return;
-    if (new URLSearchParams(location.search).get("action") === "review" && booking.status === "completed" && booking.paymentStatus === "paid" && !existingReview) {
+    if (new URLSearchParams(location.search).get("action") === "review" && booking.status === "completed" && booking.paymentStatus === "paid") {
       setReviewModalOpen(true);
     }
   }, [booking, existingReview, location.search]);
@@ -256,18 +258,36 @@ export function AppointmentDetailPage() {
     setSubmittingReview(true);
     setReviewError(null);
     try {
-      const createdReview = await reviewService.createReview({
+      const result = await reviewService.createReview({
         bookingId: booking.id,
         treatmentId: booking.treatmentId,
         rating: payload.rating,
         comment: payload.comment,
         tags: payload.tags,
       });
-      setExistingReview(createdReview);
+      setExistingReview(result);
+      setReviewModalOpen(false);
     } catch (error) {
       setReviewError((error as Error).message);
     } finally {
       setSubmittingReview(false);
+    }
+  }
+
+  async function handleDeleteReview() {
+    if (!existingReview) return;
+    if (!window.confirm("Bạn có chắc muốn xóa đánh giá này?")) return;
+    setDeletingReview(true);
+    setReviewError(null);
+    try {
+      await reviewService.deleteReview(existingReview.id);
+      setExistingReview(null);
+      setReviewModalOpen(false);
+      setIsEditingReview(false);
+    } catch (error) {
+      setReviewError((error as Error).message);
+    } finally {
+      setDeletingReview(false);
     }
   }
 
@@ -357,18 +377,12 @@ export function AppointmentDetailPage() {
                   Hủy lịch
                 </button>
               )}
-              {canReviewBooking && (
+              {(canReviewBooking || existingReview) && (
                 <button onClick={() => setReviewModalOpen(true)} className="flex items-center gap-2 rounded-xl bg-[#aef35e] px-6 py-3 font-bold text-[#426e00] transition-all hover:shadow-md md:ml-auto">
                   <Star className="h-5 w-5" />
-                  Đánh giá buổi trị liệu
+                  {existingReview ? "Cập nhật đánh giá" : "Đánh giá buổi trị liệu"}
                 </button>
               )}
-              {existingReview ? (
-                <span className="flex items-center gap-2 rounded-xl border border-green-700/15 bg-green-50 px-6 py-3 font-bold text-green-700 md:ml-auto">
-                  <Star className="h-5 w-5 fill-green-700" />
-                  Đã đánh giá
-                </span>
-              ) : null}
             </div>
           </section>
 
@@ -491,10 +505,7 @@ export function AppointmentDetailPage() {
             <button className="w-full py-2 text-sm font-bold text-[#005c55] hover:underline">Xem chính sách dịch vụ</button>
           </section>
 
-          <section className="group relative rounded-2xl border border-[#bdc9c6] bg-white p-6">
-            <button className="absolute right-4 top-4 rounded-full p-2 text-[#6e7977] opacity-0 transition-all hover:text-[#005c55] group-hover:opacity-100">
-              <Edit3 className="h-4 w-4" />
-            </button>
+          <section className="relative rounded-2xl border border-[#bdc9c6] bg-white p-6">
             <h2 className="mb-4 text-sm font-bold uppercase tracking-wider text-[#6e7977]">Thông tin thêm</h2>
             <div>
               <p className="mb-1 text-[10px] font-bold uppercase text-[#6e7977]">Ghi chú sức khỏe cho kỹ thuật viên</p>
@@ -533,50 +544,53 @@ export function AppointmentDetailPage() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
           <Card className="w-full max-w-md rounded-2xl border-[#bdc9c6] bg-white p-6 shadow-xl">
             <div className="mb-4 flex items-center justify-between">
-              <h2 className="text-xl font-bold text-[#181c1c]">Đánh giá buổi trị liệu</h2>
-              <button onClick={() => setReviewModalOpen(false)} className="rounded-full p-1 text-[#3e4947] hover:bg-[#ebefed]">
+              <h2 className="text-xl font-bold text-[#181c1c]">
+                {existingReview ? "Cập nhật đánh giá" : "Đánh giá buổi trị liệu"}
+              </h2>
+              <button onClick={() => { setReviewModalOpen(false); setIsEditingReview(false); }} className="rounded-full p-1 text-[#3e4947] hover:bg-[#ebefed]">
                 <X className="h-5 w-5" />
               </button>
             </div>
-            <p className="mb-4 text-[#3e4947]">Chia sẻ cảm nhận để JvJ cải thiện trải nghiệm chăm sóc tại nhà.</p>
-            {existingReview ? (
-              <ReviewSummary review={existingReview} />
+            {reviewError ? <p className="mb-3 text-sm text-red-600">{reviewError}</p> : null}
+            {existingReview && !isEditingReview ? (
+              <>
+                <p className="mb-4 text-[#3e4947]">Bạn đã đánh giá buổi trị liệu này.</p>
+                <div className="flex gap-3">
+                  <button
+                    onClick={() => setIsEditingReview(true)}
+                    className="flex flex-1 items-center justify-center gap-2 rounded-xl border-2 border-[#bdc9c6] py-2.5 text-sm font-semibold text-[#3e4947] transition-all hover:bg-[#f1f4f3]"
+                  >
+                    <Edit3 className="h-4 w-4" />
+                    Cập nhật đánh giá
+                  </button>
+                  <button
+                    onClick={handleDeleteReview}
+                    disabled={deletingReview}
+                    className="flex flex-1 items-center justify-center gap-2 rounded-xl border-2 border-red-200 py-2.5 text-sm font-semibold text-red-600 transition-all hover:bg-red-50 disabled:opacity-50"
+                  >
+                    <X className="h-4 w-4" />
+                    {deletingReview ? "Đang xóa..." : "Xóa đánh giá"}
+                  </button>
+                </div>
+              </>
             ) : (
-              <BookingReviewForm
-                submitting={submittingReview}
-                error={reviewError}
-                onSubmit={async (payload) => {
-                  await handleSubmitReview(payload);
-                }}
-              />
+              <>
+                <p className="mb-4 text-[#3e4947]">Chia sẻ cảm nhận để JvJ cải thiện trải nghiệm chăm sóc tại nhà.</p>
+                <BookingReviewForm
+                  submitting={submittingReview}
+                  error={reviewError}
+                  initialValues={existingReview ? { rating: existingReview.rating as 1 | 2 | 3 | 4 | 5, comment: existingReview.comment, tags: existingReview.tags as ReviewTag[] } : undefined}
+                  onSubmit={async (payload) => {
+                    await handleSubmitReview(payload);
+                    setIsEditingReview(false);
+                  }}
+                  onCancel={existingReview ? () => setIsEditingReview(false) : undefined}
+                />
+              </>
             )}
           </Card>
         </div>
       )}
-    </div>
-  );
-}
-
-function ReviewSummary({ review }: { review: Review }) {
-  return (
-    <div className="rounded-xl border border-[#bdc9c6] bg-[#f1f4f3] p-4 text-sm text-[#3e4947]">
-      <div className="mb-3 flex items-center justify-between gap-3">
-        <p className="font-bold text-[#181c1c]">Đánh giá của bạn</p>
-        <div className="flex items-center gap-1 text-[#A16207]">
-          <Star className="h-4 w-4 fill-[#A16207]" />
-          <span className="font-bold">{review.rating}/5</span>
-        </div>
-      </div>
-      <p className="leading-6 text-[#181c1c]">{review.comment}</p>
-      {review.tags.length > 0 ? (
-        <div className="mt-3 flex flex-wrap gap-2">
-          {review.tags.map((tag) => (
-            <span key={tag} className="rounded-full border border-[#005c55]/10 bg-[#E6F4F1] px-2.5 py-1 text-xs font-semibold text-[#005c55]">
-              {tag}
-            </span>
-          ))}
-        </div>
-      ) : null}
     </div>
   );
 }

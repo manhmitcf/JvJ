@@ -40,3 +40,15 @@ class ReviewSerializer(serializers.ModelSerializer):
             "id", "customer_name", "customer_avatar", "treatment_name",
             "rating", "comment", "tags", "is_visible", "created_at",
         ]
+
+
+class ReviewUpdateSerializer(serializers.Serializer):
+    rating = serializers.IntegerField(min_value=1, max_value=5)
+    comment = serializers.CharField()
+    tags = serializers.ListField(child=serializers.CharField(), required=False, default=list)
+
+    def validate_tags(self, value):
+        for tag in value:
+            if tag not in VALID_TAGS:
+                raise serializers.ValidationError(f"Tag '{tag}' không hợp lệ")
+        return value

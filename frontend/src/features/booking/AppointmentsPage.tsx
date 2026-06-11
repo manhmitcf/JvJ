@@ -20,6 +20,7 @@ import { Card } from "@/components/ui/card";
 import { LoadingSkeleton } from "@/components/shared/LoadingSkeleton";
 import { bookingService } from "@/services/booking-service";
 import { reviewService } from "@/services/review-service";
+import { type Review } from "@/types/review";
 import { type BookingWithDisplay } from "@/services/mappers/booking-mapper";
 import { type BookingStatus, type PaymentStatus } from "@/types/booking";
 import { cn } from "@/utils/cn";
@@ -98,8 +99,9 @@ function canPay(booking: BookingWithDisplay) {
   return booking.paymentStatus !== "paid" && booking.status !== "cancelled";
 }
 
-function canReview(booking: BookingWithDisplay, reviewedBookingIds: Set<string>) {
-  return booking.status === "completed" && booking.paymentStatus === "paid" && !reviewedBookingIds.has(booking.id);
+function canReview(booking: BookingWithDisplay, reviewsByBookingId: Record<string, Review | null>) {
+  const review = reviewsByBookingId[booking.id];
+  return booking.status === "completed" && booking.paymentStatus === "paid" && !review;
 }
 
 function getPaymentText(paymentStatus: PaymentStatus) {
@@ -119,7 +121,7 @@ export function AppointmentsPage() {
   const [cancelModalOpen, setCancelModalOpen] = useState(false);
   const [selectedBookingId, setSelectedBookingId] = useState<string | null>(null);
   const [cancelling, setCancelling] = useState(false);
-  const [reviewedBookingIds, setReviewedBookingIds] = useState<Set<string>>(new Set());
+  const [reviewsByBookingId, setReviewsByBookingId] = useState<Record<string, Review | null>>({});
 
   useEffect(() => {
     loadBookings();
@@ -132,9 +134,24 @@ export function AppointmentsPage() {
         bookingService.listBookingsByCustomer("customer-1"),
       ]);
       setBookings(bookingData);
-      // Review status is tracked server-side; listReviews endpoint is not available publicly
-      // Backend handles duplicate review validation on create
-      setReviewedBookingIds(new Set());
+
+      const completedBookings = bookingData.filter(
+        (b) => b.status === "completed" && b.paymentStatus === "paid",
+      );
+      console.log("[AppointmentsPage] Completed bookings:", completedBookings.map((b) => ({ id: b.id, code: b.code })));
+      const reviewsResult: Record<string, Review | null> = {};
+      for (const booking of completedBookings) {
+        try {
+          const review = await reviewService.getReviewByBookingId(booking.id);
+          reviewsResult[booking.id] = review;
+          console.log(`[AppointmentsPage] Review for booking ${booking.id}:`, review);
+        } catch (err) {
+          console.warn(`[AppointmentsPage] getReviewByBookingId(${booking.id}) failed:`, err);
+          reviewsResult[booking.id] = null;
+        }
+      }
+      console.log("[AppointmentsPage] Final reviewsByBookingId:", reviewsResult);
+      setReviewsByBookingId(reviewsResult);
     } finally {
       setLoading(false);
     }
@@ -255,7 +272,7 @@ export function AppointmentsPage() {
             </Card>
           ) : (
             filteredBookings.map((booking) => (
-              <AppointmentCard key={booking.id} booking={booking} reviewedBookingIds={reviewedBookingIds} onCancel={openCancelModal} />
+              <AppointmentCard key={booking.id} booking={booking} reviewsByBookingId={reviewsByBookingId} onCancel={openCancelModal} />
             ))
           )}
         </section>
@@ -362,7 +379,7 @@ function HighlightedAppointment({ bookings }: { bookings: BookingWithDisplay[] }
   );
 }
 
-function AppointmentCard({ booking, reviewedBookingIds, onCancel }: { booking: BookingWithDisplay; reviewedBookingIds: Set<string>; onCancel: (bookingId: string) => void }) {
+function AppointmentCard({ booking, reviewsByBookingId, onCancel }: { booking: BookingWithDisplay; reviewsByBookingId: Record<string, Review | null>; onCancel: (bookingId: string) => void }) {
   const navigate = useNavigate();
   const display = getAppointmentDisplay(booking);
   const Icon = iconByType[display.icon];
@@ -370,8 +387,9 @@ function AppointmentCard({ booking, reviewedBookingIds, onCancel }: { booking: B
   const paymentText = getPaymentText(booking.paymentStatus);
   const paymentToneClassName = paymentStatusToneClassNames[booking.paymentStatus];
   const showPayCta = canPay(booking);
-  const showReviewCta = canReview(booking, reviewedBookingIds);
-  const isReviewed = booking.status === "completed" && booking.paymentStatus === "paid" && reviewedBookingIds.has(booking.id);
+  const showReviewCta = canReview(booking, reviewsByBookingId);
+  const existingReview = reviewsByBookingId[booking.id];
+  const isReviewed = !!existingReview;
   const canCancel = booking.status === "pending";
 
   return (
@@ -418,7 +436,14 @@ function AppointmentCard({ booking, reviewedBookingIds, onCancel }: { booking: B
               Đánh giá
             </button>
           ) : null}
-          {isReviewed ? <span className="rounded-xl border border-green-700/15 bg-green-50 px-5 py-2.5 text-sm font-semibold text-green-700">Đã đánh giá</span> : null}
+          {isReviewed ? (
+            <button
+              onClick={() => navigate(`/app/appointments/${booking.id}`)}
+              className="flex items-center gap-1.5 rounded-xl bg-[#aef35e] px-5 py-2.5 text-sm font-bold text-[#426e00] transition-all hover:shadow-md"
+            >
+              Cập nhật đánh giá
+            </button>
+          ) : null}
           {canCancel ? (
             <button onClick={() => onCancel(booking.id)} className="rounded-xl border border-[#bdc9c6] px-5 py-2.5 text-sm font-medium text-[#3e4947] transition-all hover:bg-[#ebefed]">
               Hủy lịch

@@ -17,3 +17,15 @@ export type TherapistProfileDto = {
   citizen_id_back_url?: string;
   rejection_reason: string;
 };
+
+export type ReviewDto = {
+  id: string;
+  customer_name: string;
+  customer_avatar: string | null;
+  treatment_name: string;
+  rating: number;
+  comment: string;
+  tags: string[];
+  is_visible: boolean;
+  created_at: string;
+};

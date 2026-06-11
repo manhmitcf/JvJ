@@ -329,6 +329,13 @@ export function TherapistSchedulePage() {
   const bookedCount = slots.filter((slot) => slot.bookingId).length;
   const lockedCount = slots.filter((slot) => !slot.isAvailable && !slot.bookingId).length;
 
+  const totalHours = slots.reduce((acc, slot) => {
+    const start = slot.startTime.split(":").map(Number);
+    const end = slot.endTime.split(":").map(Number);
+    const minutes = (end[0] * 60 + end[1]) - (start[0] * 60 + start[1]);
+    return acc + minutes / 60;
+  }, 0);
+
   const handleToggleAvailability = async (slotId: string, isAvailable: boolean) => {
     await updateSlot(slotId, { isAvailable });
   };
@@ -351,7 +358,7 @@ export function TherapistSchedulePage() {
         <MetricCard icon={CalendarDays} label="Slot khả dụng" value={String(availableCount).padStart(2, "0")} hint="Tuần này" />
         <MetricCard icon={Clock} label="Đã có lịch" value={String(bookedCount).padStart(2, "0")} hint="Cần chuẩn bị" tone="blue" />
         <MetricCard icon={EyeOff} label="Tạm khóa" value={String(lockedCount).padStart(2, "0")} hint="Không nhận lịch" tone="amber" />
-        <MetricCard icon={Activity} label="Tổng giờ" value={`${slots.length}h`} hint="Làm việc tuần này" tone="green" />
+        <MetricCard icon={Activity} label="Tổng giờ" value={`${totalHours.toFixed(1)}h`} hint="Làm việc tuần này" tone="green" />
       </div>
 
       <div className="flex flex-col gap-md rounded-[2rem] border border-botanical-border bg-white p-md shadow-stitch-soft lg:flex-row lg:items-center lg:justify-between">

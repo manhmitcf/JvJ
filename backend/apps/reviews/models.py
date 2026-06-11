@@ -36,6 +36,16 @@ class ReviewManager(models.Manager):
         treatment.review_count = result["count"] or 0
         treatment.save(update_fields=["rating", "review_count"])
 
+    def update_review(self, review, rating, comment, tags=None):
+        review.rating = rating
+        review.comment = comment
+        review.tags = tags if tags is not None else review.tags
+        review.save()
+
+        self._update_therapist_rating(review.therapist)
+        self._update_treatment_rating(review.treatment)
+        return review
+
 
 class Review(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
@@ -59,6 +69,10 @@ class Review(models.Model):
             models.CheckConstraint(
                 condition=models.Q(rating__gte=1) & models.Q(rating__lte=5),
                 name="rating_1_to_5",
+            ),
+            models.UniqueConstraint(
+                fields=["customer", "treatment"],
+                name="unique_customer_treatment_review",
             ),
         ]
 
