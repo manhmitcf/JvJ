@@ -263,10 +263,8 @@ class AdminRegisterSerializer(serializers.Serializer):
         expected_otp = settings.ADMIN_REGISTRATION_OTP
         if not expected_otp:
             raise serializers.ValidationError("OTP chưa được cấu hình trên server")
-
         if value != expected_otp:
             raise serializers.ValidationError("OTP không đúng")
-
         return value
 
     def create(self, validated_data):
@@ -285,3 +283,9 @@ class AdminRegisterSerializer(serializers.Serializer):
             **validated_data,
         )
         return user
+
+
+class UserSummarySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = ["id", "full_name", "avatar_url", "role"]

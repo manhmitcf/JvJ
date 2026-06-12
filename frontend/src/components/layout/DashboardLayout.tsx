@@ -1,6 +1,7 @@
 import { Bell, Building2, CalendarDays, ClipboardList, LayoutDashboard, LogOut, MapPin, MessageCircle, Settings, Sparkles, UserCheck, UserRound, Users, Wallet } from "lucide-react";
 import { Link, NavLink, Outlet, useNavigate } from "react-router-dom";
 import { BrandLogo } from "@/components/brand/BrandLogo";
+import { ChatPanel } from "@/features/conversation/components/ChatPanel";
 import { useAuthStore } from "@/features/auth/auth-store";
 import { cn } from "@/utils/cn";
 
@@ -129,6 +130,8 @@ export function DashboardLayout({ area }: { area: "Customer" | "Therapist" | "Ad
         <main className="px-xl py-lg">
           <Outlet />
         </main>
+
+        <ChatPanel />
       </div>
     </div>
   );

@@ -20,7 +20,6 @@ import { LoadingSkeleton } from "@/components/shared/LoadingSkeleton";
 import { Badge } from "@/components/ui/badge";
 import { SectionHeading } from "@/features/public/components/SectionHeading";
 import { formatDuration, formatPrice, formatRating } from "@/features/public/lib/formatters";
-import { getTherapistStitchImage, publicStitchAssets } from "@/features/public/lib/stitch-assets";
 import { reviewService } from "@/services/review-service";
 import { therapistService } from "@/services/therapist-service";
 import { treatmentService } from "@/services/treatment-service";
@@ -111,9 +110,16 @@ export function TherapistDetailPage() {
     );
   }
 
-  const profileImage = getTherapistStitchImage(
-    therapist.id,
-    therapist.avatarUrl ?? publicStitchAssets.therapistSupport,
+  function getInitials(name: string) {
+    const parts = name.trim().split(/\s+/).slice(0, 2);
+    return parts.map((part) => (part[0] ?? "").toUpperCase()).join("") || "?";
+  }
+
+  const profileImage = therapist.avatarUrl?.trim();
+  const profileImageFallback = (
+    <div className="flex h-full w-full items-center justify-center bg-soft-mint text-primary">
+      <span className="text-2xl font-black">{getInitials(therapist.fullName)}</span>
+    </div>
   );
   const averageRating = therapistReviews.length > 0
     ? therapistReviews.reduce((sum, review) => sum + review.rating, 0) / therapistReviews.length
@@ -135,11 +141,17 @@ export function TherapistDetailPage() {
           <section className="rounded-xl border border-botanical-border bg-surface-container-lowest p-6 shadow-sm md:p-8">
             <div className="flex flex-col gap-6 md:flex-row">
               <div className="w-full shrink-0 md:w-1/3">
-                <img
-                  src={profileImage}
-                  alt={therapist.fullName}
-                  className="h-80 w-full rounded-xl object-cover object-top shadow-md"
-                />
+                {profileImage ? (
+                  <img
+                    src={profileImage}
+                    alt={therapist.fullName}
+                    className="h-80 w-full rounded-xl object-cover object-top shadow-md"
+                  />
+                ) : (
+                  <div className="flex h-80 w-full items-center justify-center rounded-xl bg-soft-mint text-primary">
+                    <span className="text-4xl font-black">{getInitials(therapist.fullName)}</span>
+                  </div>
+                )}
               </div>
 
               <div className="flex-1">
@@ -314,8 +326,12 @@ export function TherapistDetailPage() {
           <div className="sticky top-24 space-y-4">
             <div className="rounded-xl border border-botanical-border bg-white p-6 shadow-lg">
               <div className="mb-6 flex items-center gap-4">
-                <div className="h-16 w-16 overflow-hidden rounded-full border-2 border-primary">
-                  <img src={profileImage} alt={therapist.fullName} loading="lazy" className="h-full w-full object-cover object-top" />
+                <div className="h-16 w-16 overflow-hidden rounded-full border-2 border-primary bg-soft-mint text-primary">
+                  {profileImage ? (
+                    <img src={profileImage} alt={therapist.fullName} loading="lazy" className="h-full w-full object-cover object-top" />
+                  ) : (
+                    <span className="flex h-full w-full items-center justify-center text-sm font-black">{getInitials(therapist.fullName)}</span>
+                  )}
                 </div>
                 <div>
                   <h3 className="text-xl font-bold text-ink-primary">{therapist.fullName}</h3>

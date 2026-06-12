@@ -11,6 +11,22 @@ import treatmentListingTwoImage from "@/assets/public-discovery/stitch-generated
 import treatmentListingThreeImage from "@/assets/public-discovery/stitch-generated/webp/treatments-listing-03.webp";
 import treatmentListingFourImage from "@/assets/public-discovery/stitch-generated/webp/treatments-listing-04.webp";
 
+// Fallback URLs used when stitched images aren't available
+const PLACEHOLDER_IMAGES = {
+  customerA: "https://api.dicebear.com/7.x/personas/svg?seed=customer-a&backgroundColor=c1e1c1",
+  customerB: "https://api.dicebear.com/7.x/personas/svg?seed=customer-b&backgroundColor=d4c1e1",
+  booking: "https://images.unsplash.com/photo-1544161515-4ab6ce6db874?w=400&q=80",
+  therapist: "https://images.unsplash.com/photo-1607990281513-2c110a25bd8c?w=400&q=80",
+};
+
+export const therapistAssets = {
+  dashboardCustomerA: PLACEHOLDER_IMAGES.customerA,
+  dashboardCustomerB: PLACEHOLDER_IMAGES.customerB,
+  bookingImageA: PLACEHOLDER_IMAGES.booking,
+  bookingImageB: PLACEHOLDER_IMAGES.booking,
+  scheduleTherapistImage: PLACEHOLDER_IMAGES.therapist,
+};
+
 const treatmentCardImages: Record<string, string> = {
   "treatment-1": treatmentListingOneImage,
   "treatment-2": treatmentListingTwoImage,

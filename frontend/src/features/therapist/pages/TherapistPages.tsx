@@ -50,6 +50,7 @@ import { useScheduleStore } from "../stores/schedule-store";
 import { useTreatmentStore } from "../stores/treatment-store";
 import { useWalletStore } from "../stores/wallet-store";
 import { uploadFile } from "@/services/upload-service";
+import { therapistAssets } from "@/features/public/lib/stitch-assets";
 
 const money = new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" });
 const moneyCompact = new Intl.NumberFormat("vi-VN", { notation: "compact", maximumFractionDigits: 1 });
@@ -125,7 +126,7 @@ export function TherapistHomePage() {
       <div className="grid gap-lg xl:grid-cols-[minmax(0,1.45fr)_minmax(320px,0.85fr)]">
         <TodayAppointments
           appointments={todayAppointments}
-          images={[dashboardCustomerA, dashboardCustomerB, bookingImageA, bookingImageB]}
+          images={[therapistAssets.dashboardCustomerA, therapistAssets.dashboardCustomerB, therapistAssets.bookingImageA, therapistAssets.bookingImageB]}
         />
 
         <section className="space-y-md">
@@ -297,7 +298,7 @@ export function TherapistSchedulePage() {
 
         <aside className="space-y-lg">
           <SlotFormDialog
-            image={scheduleTherapistImage}
+            image={therapistAssets.scheduleTherapistImage}
             onCreate={() => void createSlot({ date: "2026-06-03", startTime: "08:00", endTime: "09:00" })}
           />
           {slots.length > 0 && <SecondaryButton onClick={() => void deleteSlot(slots[0].id)}><Trash2 className="h-4 w-4" /> Xóa slot đầu</SecondaryButton>}
@@ -427,7 +428,7 @@ export function TherapistBookingsPage() {
         <div>
           <BookingDetailDrawer
             booking={selectedBooking}
-            image={bookingImageA}
+            image={therapistAssets.bookingImageA}
             customerName={getCustomerName(selectedBooking)}
             treatmentName={getTreatmentName(selectedBooking)}
           />

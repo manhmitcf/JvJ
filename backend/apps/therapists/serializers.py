@@ -16,6 +16,7 @@ class TherapistPublicSerializer(serializers.ModelSerializer):
     phone = serializers.CharField(source="user.phone", read_only=True)
     avatar_url = serializers.URLField(source="user.avatar_url", read_only=True)
     treatment_count = serializers.SerializerMethodField()
+    certificate_urls = serializers.SerializerMethodField()
 
     class Meta:
         model = TherapistProfile
@@ -23,6 +24,7 @@ class TherapistPublicSerializer(serializers.ModelSerializer):
             "id", "full_name", "email", "phone", "avatar_url",
             "status", "years_of_experience", "specialties",
             "rating", "completed_bookings", "treatment_count",
+            "certificate_urls",
         ]
         read_only_fields = fields
 
@@ -36,6 +38,9 @@ class TherapistPublicSerializer(serializers.ModelSerializer):
             therapist=obj.user,
             is_available=True,
         ).count()
+
+    def get_certificate_urls(self, obj):
+        return obj.certificate_urls if obj.certificate_urls else []
 
 
 class TherapistApplySerializer(serializers.Serializer):
