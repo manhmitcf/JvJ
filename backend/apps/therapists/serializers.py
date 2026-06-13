@@ -14,7 +14,7 @@ class TherapistPublicSerializer(serializers.ModelSerializer):
     full_name = serializers.CharField(source="user.full_name", read_only=True)
     email = serializers.EmailField(source="user.email", read_only=True)
     phone = serializers.CharField(source="user.phone", read_only=True)
-    avatar_url = serializers.URLField(source="user.avatar_url", read_only=True)
+    avatar_url = serializers.SerializerMethodField()
     treatment_count = serializers.SerializerMethodField()
     certificate_urls = serializers.SerializerMethodField()
 
@@ -41,6 +41,12 @@ class TherapistPublicSerializer(serializers.ModelSerializer):
 
     def get_certificate_urls(self, obj):
         return obj.certificate_urls if obj.certificate_urls else []
+
+    def get_avatar_url(self, obj):
+        url = getattr(obj.user, "avatar_url", "") or ""
+        if url:
+            return url
+        return obj.portrait_url or ""
 
 
 class TherapistApplySerializer(serializers.Serializer):
@@ -75,20 +81,28 @@ class TherapistProfileSerializer(serializers.Serializer):
     bio = serializers.CharField(allow_blank=True, required=False, default="")
     years_of_experience = serializers.IntegerField(min_value=0, required=False)
     specialties = serializers.ListField(child=serializers.CharField(), required=False)
+    service_areas = serializers.ListField(child=serializers.CharField(), required=False, default=list)
     is_online = serializers.BooleanField(read_only=True)
     status = serializers.CharField(read_only=True)
     rating = serializers.DecimalField(max_digits=2, decimal_places=1, read_only=True)
     completed_bookings = serializers.IntegerField(read_only=True)
-    certificate_urls = serializers.ListField(child=serializers.URLField(), read_only=True)
+    certificate_urls = serializers.ListField(child=serializers.URLField(), required=False)
+    portrait_url = serializers.URLField(allow_blank=True, required=False)
+    citizen_id_front_url = serializers.URLField(allow_blank=True, read_only=True)
+    citizen_id_back_url = serializers.URLField(allow_blank=True, read_only=True)
     citizen_id = serializers.CharField(read_only=True)
-    citizen_id_front_url = serializers.URLField(read_only=True)
-    citizen_id_back_url = serializers.URLField(read_only=True)
     rejection_reason = serializers.CharField(read_only=True)
+    # Pending credential fields — therapist can always edit these
+    pending_citizen_id = serializers.CharField(max_length=12, allow_blank=True, required=False)
+    pending_citizen_id_front_url = serializers.URLField(allow_blank=True, required=False)
+    pending_citizen_id_back_url = serializers.URLField(allow_blank=True, required=False)
+    pending_certificate_urls = serializers.ListField(child=serializers.URLField(), required=False, default=list)
 
     def to_representation(self, instance):
         """instance là TherapistProfile."""
         data = super().to_representation(instance)
         data["email"] = instance.user.email
+        data["id"] = str(instance.user.id)
         data["phone"] = instance.user.phone or ""
         data["full_name"] = instance.user.full_name or ""
         data["avatar_url"] = instance.user.avatar_url or ""
@@ -102,6 +116,12 @@ class TherapistProfileSerializer(serializers.Serializer):
         data["citizen_id_front_url"] = instance.citizen_id_front_url or ""
         data["citizen_id_back_url"] = instance.citizen_id_back_url or ""
         data["rejection_reason"] = instance.rejection_reason or ""
+        data["service_areas"] = instance.service_areas if instance.service_areas else []
+        # Pending credential fields
+        data["pending_citizen_id"] = instance.pending_citizen_id or ""
+        data["pending_citizen_id_front_url"] = instance.pending_citizen_id_front_url or ""
+        data["pending_citizen_id_back_url"] = instance.pending_citizen_id_back_url or ""
+        data["pending_certificate_urls"] = instance.pending_certificate_urls if instance.pending_certificate_urls else []
         if hasattr(instance, "bio"):
             data["bio"] = instance.bio
         else:
@@ -109,8 +129,8 @@ class TherapistProfileSerializer(serializers.Serializer):
         return data
 
     def update(self, instance, validated_data):
-        user = instance.user
-        profile = instance
+        # Get user from request context (same pattern as UserSerializer)
+        user = self.context["request"].user
 
         user_fields = []
         for field in ["full_name", "phone", "avatar_url"]:
@@ -121,12 +141,40 @@ class TherapistProfileSerializer(serializers.Serializer):
             user.save(update_fields=user_fields)
 
         profile_fields = []
-        for field in ["bio", "years_of_experience", "specialties"]:
-            if field in validated_data and hasattr(profile, field):
-                setattr(profile, field, validated_data[field])
+        for field in ["bio", "years_of_experience", "specialties", "service_areas"]:
+            if field in validated_data and hasattr(instance, field):
+                setattr(instance, field, validated_data[field])
                 profile_fields.append(field)
+
+        # Handle portrait_url
+        portrait_url = validated_data.get("portrait_url")
+        if portrait_url is not None:
+            instance.portrait_url = portrait_url
+            profile_fields.append("portrait_url")
+
+        # Handle pending credential fields (only these are writable by therapist)
+        pending_citizen_id = validated_data.get("pending_citizen_id")
+        if pending_citizen_id is not None:
+            instance.pending_citizen_id = pending_citizen_id
+            profile_fields.append("pending_citizen_id")
+
+        pending_citizen_id_front_url = validated_data.get("pending_citizen_id_front_url")
+        if pending_citizen_id_front_url is not None:
+            instance.pending_citizen_id_front_url = pending_citizen_id_front_url
+            profile_fields.append("pending_citizen_id_front_url")
+
+        pending_citizen_id_back_url = validated_data.get("pending_citizen_id_back_url")
+        if pending_citizen_id_back_url is not None:
+            instance.pending_citizen_id_back_url = pending_citizen_id_back_url
+            profile_fields.append("pending_citizen_id_back_url")
+
+        pending_certificate_urls = validated_data.get("pending_certificate_urls")
+        if pending_certificate_urls is not None:
+            instance.pending_certificate_urls = pending_certificate_urls
+            profile_fields.append("pending_certificate_urls")
+
         if profile_fields:
-            profile.save(update_fields=profile_fields)
+            instance.save(update_fields=profile_fields)
 
         return instance
 

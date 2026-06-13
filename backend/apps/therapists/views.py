@@ -227,7 +227,7 @@ class TherapistApplyView(APIView):
             serializer.is_valid(raise_exception=True)
             profile.years_of_experience = serializer.validated_data["years_of_experience"]
             profile.specialties = serializer.validated_data["specialties"]
-            profile.certificate_urls = serializer.validated_data.get("certificate_urls", [])
+            profile.pending_certificate_urls = serializer.validated_data.get("certificate_urls", [])
             profile.status = "pending_approval"
             profile.rejection_reason = ""
             profile.save()
@@ -251,7 +251,7 @@ class TherapistApplyView(APIView):
             user=request.user,
             years_of_experience=serializer.validated_data["years_of_experience"],
             specialties=serializer.validated_data["specialties"],
-            certificate_urls=serializer.validated_data.get("certificate_urls", []),
+            pending_certificate_urls=serializer.validated_data.get("certificate_urls", []),
             status="pending_approval",
         )
 
@@ -395,10 +395,11 @@ class TherapistProfileView(APIView):
             )
         serializer = TherapistProfileSerializer(
             instance=request.user.therapist_profile, data=request.data,
+            context={"request": request},
         )
         serializer.is_valid(raise_exception=True)
-        serializer.save()
-        return Response({"data": serializer.data})
+        updated_profile = serializer.save()
+        return Response({"data": TherapistProfileSerializer(updated_profile, context={"request": request}).data})
 
 
 class TherapistOnlineToggleView(APIView):

@@ -56,6 +56,7 @@ class UserSerializer(serializers.ModelSerializer):
     rating = serializers.SerializerMethodField()
     completed_bookings = serializers.SerializerMethodField()
     certificate_urls = serializers.SerializerMethodField()
+    portrait_url = serializers.SerializerMethodField()
 
     class Meta:
         model = User
@@ -72,6 +73,7 @@ class UserSerializer(serializers.ModelSerializer):
             "rating",
             "completed_bookings",
             "certificate_urls",
+            "portrait_url",
         ]
         read_only_fields = [
             "id",
@@ -83,6 +85,7 @@ class UserSerializer(serializers.ModelSerializer):
             "rating",
             "completed_bookings",
             "certificate_urls",
+            "portrait_url",
         ]
 
     def _get_therapist_profile(self, obj):
@@ -113,6 +116,10 @@ class UserSerializer(serializers.ModelSerializer):
     def get_certificate_urls(self, obj):
         profile = self._get_therapist_profile(obj)
         return profile.certificate_urls if profile else []
+
+    def get_portrait_url(self, obj):
+        profile = self._get_therapist_profile(obj)
+        return getattr(profile, "portrait_url", "") or ""
 
     def update(self, instance, validated_data):
         """Update user profile — role và email không được đổi."""
@@ -236,15 +243,15 @@ class TherapistRegisterSerializer(serializers.Serializer):
             status="pending_approval",
             years_of_experience=years_of_experience,
             specialties=specialties,
-            certificate_urls=certificate_urls,
+            pending_certificate_urls=certificate_urls,
             bio=bio,
-            citizen_id=citizen_id,
+            pending_citizen_id=citizen_id,
             service_areas=service_areas,
             has_transport=has_transport,
             has_equipment=has_equipment,
             portrait_url=portrait_url,
-            citizen_id_front_url=citizen_id_front_url,
-            citizen_id_back_url=citizen_id_back_url,
+            pending_citizen_id_front_url=citizen_id_front_url,
+            pending_citizen_id_back_url=citizen_id_back_url,
         )
         return user
 
@@ -286,6 +293,17 @@ class AdminRegisterSerializer(serializers.Serializer):
 
 
 class UserSummarySerializer(serializers.ModelSerializer):
+    avatar_url = serializers.SerializerMethodField()
+
     class Meta:
         model = User
         fields = ["id", "full_name", "avatar_url", "role"]
+
+    def get_avatar_url(self, obj):
+        url = getattr(obj, "avatar_url", "") or ""
+        if url:
+            return url
+        profile = getattr(obj, "therapist_profile", None)
+        if profile:
+            return getattr(profile, "portrait_url", "") or ""
+        return ""

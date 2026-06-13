@@ -190,6 +190,7 @@ export function AdminSpasPage() {
   const [keyword, setKeyword] = useState("");
   const [status, setStatus] = useState<Spa["status"] | "all">("all");
   const [openForm, setOpenForm] = useState(false);
+  const [editingSpa, setEditingSpa] = useState<Spa | null>(null);
   const districts = useMemo(() => ["all", ...Array.from(new Set(spas.map((spa) => spa.district)))], [spas]);
   const [district, setDistrict] = useState("all");
 
@@ -197,9 +198,45 @@ export function AdminSpasPage() {
     void fetchSpas({ keyword, status, district });
   }, [district, fetchSpas, keyword, status]);
 
+  const handleOpenCreate = () => {
+    setEditingSpa(null);
+    setOpenForm(true);
+  };
+
+  const handleOpenEdit = (spa: Spa) => {
+    setEditingSpa(spa);
+    setOpenForm(true);
+  };
+
+  const handleCloseForm = () => {
+    setOpenForm(false);
+    setEditingSpa(null);
+  };
+
+  const handleCreate = async (data: SpaFormInput) => {
+    await createSpa(data);
+    setOpenForm(false);
+  };
+
+  const handleUpdate = async (data: SpaFormInput) => {
+    if (editingSpa) {
+      await updateSpa(editingSpa.id, data);
+      setOpenForm(false);
+      setEditingSpa(null);
+    }
+  };
+
+  const handleSubmit = (data: SpaFormInput) => {
+    if (editingSpa) {
+      void handleUpdate(data);
+    } else {
+      void handleCreate(data);
+    }
+  };
+
   return (
     <section>
-      <AdminPageHeader eyebrow="Spa Partner" title="Quản lý Spa đối tác" description="Thêm, ẩn/hiện và quản lý các cơ sở Spa đối tác phục vụ gói trị liệu tại Đà Nẵng." icon={<Building2 className="h-7 w-7" />} action={<AdminPrimaryButton onClick={() => setOpenForm(true)}><Plus className="h-4 w-4" />Thêm Spa</AdminPrimaryButton>} />
+      <AdminPageHeader eyebrow="Spa Partner" title="Quản lý Spa đối tác" description="Thêm, ẩn/hiện và quản lý các cơ sở Spa đối tác phục vụ gói trị liệu tại Đà Nẵng." icon={<Building2 className="h-7 w-7" />} action={<AdminPrimaryButton onClick={handleOpenCreate}><Plus className="h-4 w-4" />Thêm Spa</AdminPrimaryButton>} />
       <div className="mb-md grid gap-sm lg:grid-cols-[1fr_180px_180px]">
         <AdminSearchBar value={keyword} onChange={setKeyword} placeholder="Tìm Spa, địa chỉ hoặc số điện thoại" />
         <select value={district} onChange={(event) => setDistrict(event.target.value)} className="h-12 rounded-2xl border border-botanical-border bg-white px-md text-body-sm font-black text-ink-primary outline-none focus:border-primary">
@@ -218,14 +255,10 @@ export function AdminSpasPage() {
         <AdminSecondaryButton onClick={() => void fetchSpas({ keyword, status, district })}>Làm mới</AdminSecondaryButton>
       </div>
       <div className="grid gap-lg xl:grid-cols-[1fr_360px]">
-        {spas.length ? <SpaManagementTable spas={spas} selectedSpaId={selectedSpa?.id} onSelect={selectSpa} onHide={(spaId, currentStatus) => void updateSpa(spaId, { status: currentStatus === "active" ? "hidden" : "active" })} onDelete={(spaId) => void deleteSpa(spaId)} /> : <AdminEmptyState title="Không có Spa phù hợp" description="Thử đổi bộ lọc hoặc thêm Spa đối tác mới." />}
+        {spas.length ? <SpaManagementTable spas={spas} selectedSpaId={selectedSpa?.id} onSelect={selectSpa} onHide={(spaId, currentStatus) => void updateSpa(spaId, { status: currentStatus === "active" ? "hidden" : "active" })} onDelete={(spaId) => void deleteSpa(spaId)} onEdit={handleOpenEdit} /> : <AdminEmptyState title="Không có Spa phù hợp" description="Thử đổi bộ lọc hoặc thêm Spa đối tác mới." />}
         <SpaDetailDrawer spa={selectedSpa} />
       </div>
-      <SpaFormDialog open={openForm} onClose={() => setOpenForm(false)} onSubmit={(data: SpaFormInput) => {
-        void createSpa(data);
-        setOpenForm(false);
-      }} />
+      <SpaFormDialog open={openForm} onClose={handleCloseForm} onSubmit={handleSubmit} spa={editingSpa} />
     </section>
   );
 }
-

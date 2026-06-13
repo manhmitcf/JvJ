@@ -24,6 +24,7 @@ class SpaPublicSerializer(serializers.ModelSerializer):
             "close_time",
             "description",
             "status",
+            "image",
             "image_urls",
             "linked_treatment_count",
             "distance_km",

@@ -4,6 +4,7 @@ from django.contrib.auth import get_user_model
 from django.db.models import Count, Q, Sum
 from django.utils import timezone
 from rest_framework import generics, permissions, status
+from rest_framework.parsers import FormParser, MultiPartParser
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
@@ -239,7 +240,17 @@ class AdminTherapistApproveView(APIView):
         profile.reviewed_at = timezone.now()
         profile.user.role = "therapist"
         profile.user.save(update_fields=["role", "updated_at"])
-        profile.save(update_fields=["status", "reviewed_by", "reviewed_at", "updated_at"])
+
+        # Sync pending credentials to approved fields
+        profile.citizen_id = profile.pending_citizen_id or ""
+        profile.citizen_id_front_url = profile.pending_citizen_id_front_url or ""
+        profile.citizen_id_back_url = profile.pending_citizen_id_back_url or ""
+        profile.certificate_urls = profile.pending_certificate_urls or []
+
+        profile.save(update_fields=[
+            "status", "reviewed_by", "reviewed_at", "updated_at",
+            "citizen_id", "citizen_id_front_url", "citizen_id_back_url", "certificate_urls",
+        ])
 
         return Response({"data": {"status": "approved", "message": "Đã duyệt hồ sơ kỹ thuật viên"}})
 

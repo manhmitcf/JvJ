@@ -54,6 +54,19 @@ export type TherapistApproval = {
   rejectionReason?: string;
 };
 
+export type CredentialUpdate = {
+  id: string;
+  therapistId: string;
+  fullName: string;
+  email: string;
+  avatarUrl?: string;
+  phone: string;
+  pendingCitizenIdFrontUrl?: string;
+  pendingCitizenIdBackUrl?: string;
+  pendingCertificateUrls: string[];
+  updatedAt: string;
+};
+
 export type AdminBookingRow = {
   id: string;
   code: string;

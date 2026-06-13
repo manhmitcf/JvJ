@@ -2,6 +2,8 @@ from django.contrib.auth import get_user_model
 from rest_framework import serializers
 
 from apps.bookings.models import Booking
+from apps.spas.models import Spa
+from apps.spas.serializers import SpaPublicSerializer
 from apps.therapists.models import TherapistProfile
 
 User = get_user_model()
@@ -58,6 +60,9 @@ class AdminTherapistDetailSerializer(serializers.ModelSerializer):
             "status", "years_of_experience", "specialties", "rating",
             "completed_bookings", "certificate_urls", "rejection_reason",
             "reviewed_by", "reviewed_at", "created_at", "updated_at",
+            "pending_citizen_id", "pending_citizen_id_front_url",
+            "pending_citizen_id_back_url", "pending_certificate_urls",
+            "citizen_id", "citizen_id_front_url", "citizen_id_back_url",
         ]
 
 
@@ -104,25 +109,33 @@ class AdminBookingDetailSerializer(serializers.ModelSerializer):
 
 # ─── Spa ───
 
-from apps.spas.models import Spa
-from apps.spas.serializers import SpaPublicSerializer as AdminSpaListSerializer
+AdminSpaListSerializer = SpaPublicSerializer
 
 
 class AdminSpaCreateSerializer(serializers.ModelSerializer):
     class Meta:
         model = Spa
         fields = [
-            "name", "address", "district", "latitude", "longitude",
+            "name", "address", "district",
             "phone", "email", "open_time", "close_time", "description",
+            "image",
             "image_urls",
         ]
 
 
 class AdminSpaUpdateSerializer(serializers.ModelSerializer):
+    id = serializers.UUIDField(read_only=True)
+    latitude = serializers.DecimalField(max_digits=9, decimal_places=6, read_only=True)
+    longitude = serializers.DecimalField(max_digits=9, decimal_places=6, read_only=True)
+    linked_treatment_count = serializers.IntegerField(read_only=True)
+
     class Meta:
         model = Spa
         fields = [
-            "name", "address", "district", "latitude", "longitude",
+            "id", "name", "address", "district", "latitude", "longitude",
             "phone", "email", "open_time", "close_time", "description",
-            "status", "image_urls",
+            "status",
+            "image",
+            "image_urls", "linked_treatment_count",
         ]
+        read_only_fields = ["id", "latitude", "longitude", "linked_treatment_count"]

@@ -44,17 +44,15 @@ function mapSpa(s: SpaDto): Spa {
 }
 
 export async function getAdminSpas(_filters: AdminSpaFilters = {}): Promise<Spa[]> {
-  const res = await apiClient.get<{ results: SpaDto[] }>("/admin/spas/");
+  const res = await apiClient.get<{ results: SpaDto[] }>("/api/v1/admin/spas/");
   return (res.data.results ?? []).map(mapSpa);
 }
 
 export async function createSpa(data: SpaFormInput): Promise<Spa> {
-  const res = await apiClient.post<SpaDto>("/admin/spas/", {
+  const res = await apiClient.post<SpaDto>("/api/v1/admin/spas/", {
     name: data.name,
     address: data.address,
     district: data.district,
-    latitude: data.latitude,
-    longitude: data.longitude,
     phone: data.phone,
     email: data.email,
     open_time: data.openTime,
@@ -70,8 +68,6 @@ export async function updateSpa(spaId: string, updates: Partial<SpaFormInput>): 
   if (updates.name !== undefined) body.name = updates.name;
   if (updates.address !== undefined) body.address = updates.address;
   if (updates.district !== undefined) body.district = updates.district;
-  if (updates.latitude !== undefined) body.latitude = updates.latitude;
-  if (updates.longitude !== undefined) body.longitude = updates.longitude;
   if (updates.phone !== undefined) body.phone = updates.phone;
   if (updates.email !== undefined) body.email = updates.email;
   if (updates.openTime !== undefined) body.open_time = updates.openTime;
@@ -80,10 +76,10 @@ export async function updateSpa(spaId: string, updates: Partial<SpaFormInput>): 
   if (updates.status !== undefined) body.status = updates.status;
   if (updates.imageUrls !== undefined) body.image_urls = updates.imageUrls;
 
-  const res = await apiClient.put<SpaDto>(`/admin/spas/${spaId}/`, body);
+  const res = await apiClient.patch<SpaDto>(`/api/v1/admin/spas/${spaId}/`, body);
   return mapSpa(res.data);
 }
 
 export async function deleteSpa(spaId: string): Promise<void> {
-  await apiClient.delete(`/admin/spas/${spaId}/`);
+  await apiClient.delete(`/api/v1/admin/spas/${spaId}/`);
 }

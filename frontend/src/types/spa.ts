@@ -24,6 +24,6 @@ export type Spa = {
   linkedTreatmentCount: number;
 };
 
-export type SpaFormInput = Omit<Spa, "id" | "linkedTreatmentCount"> & {
+export type SpaFormInput = Omit<Spa, "id" | "linkedTreatmentCount" | "latitude" | "longitude"> & {
   linkedTreatmentCount?: number;
 };

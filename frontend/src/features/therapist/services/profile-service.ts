@@ -9,7 +9,7 @@ import { type TherapistProfileDto } from "@/types/api";
 
 function mapProfileToTherapist(dto: TherapistProfileDto): Therapist {
   return {
-    id: dto.email,
+    id: dto.id,
     role: "therapist",
     fullName: dto.full_name,
     email: dto.email,
@@ -25,8 +25,13 @@ function mapProfileToTherapist(dto: TherapistProfileDto): Therapist {
     citizenId: dto.citizen_id || undefined,
     citizenIdFrontUrl: dto.citizen_id_front_url || undefined,
     citizenIdBackUrl: dto.citizen_id_back_url || undefined,
+    pendingCitizenId: dto.pending_citizen_id || undefined,
+    pendingCitizenIdFrontUrl: dto.pending_citizen_id_front_url || undefined,
+    pendingCitizenIdBackUrl: dto.pending_citizen_id_back_url || undefined,
+    pendingCertificateUrls: dto.pending_certificate_urls,
     bio: dto.bio || undefined,
     isOnline: dto.is_online,
+    serviceAreas: dto.service_areas,
   };
 }
 
@@ -38,9 +43,11 @@ export type UpdateProfileInput = {
   bio?: string;
   years_of_experience?: number;
   specialties?: string[];
-  citizenIdFrontUrl?: string;
-  citizenIdBackUrl?: string;
-  certificateUrls?: string[];
+  serviceAreas?: string[];
+  pending_citizen_id?: string;
+  pending_citizen_id_front_url?: string;
+  pending_citizen_id_back_url?: string;
+  pending_certificate_urls?: string[];
 };
 
 export async function getTherapistProfile(): Promise<Therapist> {
@@ -60,6 +67,11 @@ export async function updateTherapistProfile(input: UpdateProfileInput): Promise
   if (input.citizenIdFrontUrl !== undefined) body.citizen_id_front_url = input.citizenIdFrontUrl;
   if (input.citizenIdBackUrl !== undefined) body.citizen_id_back_url = input.citizenIdBackUrl;
   if (input.certificateUrls !== undefined) body.certificate_urls = input.certificateUrls;
+  if (input.serviceAreas !== undefined) body.service_areas = input.serviceAreas;
+  if (input.pending_citizen_id !== undefined) body.pending_citizen_id = input.pending_citizen_id;
+  if (input.pending_citizen_id_front_url !== undefined) body.pending_citizen_id_front_url = input.pending_citizen_id_front_url;
+  if (input.pending_citizen_id_back_url !== undefined) body.pending_citizen_id_back_url = input.pending_citizen_id_back_url;
+  if (input.pending_certificate_urls !== undefined) body.pending_certificate_urls = input.pending_certificate_urls;
 
   const dto = await apiFetch<TherapistProfileDto>("/therapists/profile/", {
     method: "PUT",

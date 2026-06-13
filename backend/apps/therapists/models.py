@@ -32,7 +32,7 @@ class TherapistProfile(models.Model):
     completed_bookings = models.IntegerField(default=0)
     certificate_urls = models.JSONField(default=list)
 
-    # Thông tin CCCD và file uploads
+    # Thông tin CCCD và file uploads (approved — updated only after admin approval)
     citizen_id = models.CharField(
         max_length=12,
         blank=True,
@@ -43,6 +43,15 @@ class TherapistProfile(models.Model):
     portrait_url = models.URLField(blank=True, default="", help_text="URL ảnh chân dung")
     citizen_id_front_url = models.URLField(blank=True, default="", help_text="URL ảnh CCCD mặt trước")
     citizen_id_back_url = models.URLField(blank=True, default="", help_text="URL ảnh CCCD mặt sau")
+
+    # Pending credential fields — therapist edits anytime; synced to approved after admin approval
+    pending_citizen_id = models.CharField(
+        max_length=12, blank=True, default="",
+        help_text="Số CCCD đang chờ duyệt"
+    )
+    pending_citizen_id_front_url = models.URLField(blank=True, default="", help_text="URL ảnh CCCD mặt trước đang chờ duyệt")
+    pending_citizen_id_back_url = models.URLField(blank=True, default="", help_text="URL ảnh CCCD mặt sau đang chờ duyệt")
+    pending_certificate_urls = models.JSONField(default=list, help_text="Danh sách chứng chỉ đang chờ duyệt")
 
     # Thông tin phục vụ
     service_areas = models.JSONField(default=list, help_text="Khu vực phục vụ tại Đà Nẵng")
