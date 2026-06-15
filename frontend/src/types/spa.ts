@@ -7,6 +7,21 @@ export type SpaImage = {
   description?: string;
 };
 
+export type SpaTreatment = {
+  id: string;
+  therapistId: string;
+  therapistName: string;
+  name: string;
+  category: string;
+  description: string;
+  price: number;
+  durationMinutes: number;
+  rating: number;
+  images: string[];
+  imageUrl: string;
+  isAvailable: boolean;
+};
+
 export type Spa = {
   id: string;
   name: string;
@@ -22,8 +37,9 @@ export type Spa = {
   status: SpaStatus;
   imageUrls: string[];
   linkedTreatmentCount: number;
+  linkedTreatments: SpaTreatment[];
 };
 
-export type SpaFormInput = Omit<Spa, "id" | "linkedTreatmentCount"> & {
+export type SpaFormInput = Omit<Spa, "id" | "linkedTreatmentCount" | "latitude" | "longitude" | "linkedTreatments"> & {
   linkedTreatmentCount?: number;
 };

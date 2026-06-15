@@ -1,4 +1,4 @@
-import { CalendarCheck, CheckCircle2, CircleDollarSign, UserCheck, Users } from "lucide-react";
+import { CalendarCheck, CheckCircle2, CircleDollarSign, ShieldCheck, UserCheck, Users } from "lucide-react";
 import { Link } from "react-router-dom";
 import { type AdminAlert, type AdminChartPoint, type AdminOverviewMetrics } from "@/types/admin";
 import { AdminMetricCard, AdminStatusBadge } from "./shared";
@@ -11,11 +11,12 @@ export function AdminOverviewPanels({ metrics, chart, alerts }: { metrics: Admin
 
   return (
     <div className="space-y-lg">
-      <div className="grid gap-md md:grid-cols-2 xl:grid-cols-5">
+      <div className="grid gap-md md:grid-cols-2 xl:grid-cols-6">
         <AdminMetricCard label="Khách hàng" value={formatter.format(metrics.totalCustomers)} helper="Tài khoản customer đang hoạt động" icon={<Users className="h-5 w-5" />} />
         <AdminMetricCard label="KTV hoạt động" value={formatter.format(metrics.activeTherapists)} helper="Therapist đã được duyệt" icon={<UserCheck className="h-5 w-5" />} />
         <AdminMetricCard label="Booking hôm nay" value={formatter.format(metrics.newBookingsToday)} helper="Lịch mới cần theo dõi" icon={<CalendarCheck className="h-5 w-5" />} />
         <AdminMetricCard label="Hồ sơ chờ duyệt" value={formatter.format(metrics.pendingTherapistApprovals)} helper="Cần phản hồi trong ngày" icon={<CheckCircle2 className="h-5 w-5" />} />
+        <AdminMetricCard label="Giấy tờ cập nhật" value={formatter.format(metrics.pendingCredentialUpdates)} helper="KTV cập nhật CCCD/chứng chỉ" icon={<ShieldCheck className="h-5 w-5" />} />
         <AdminMetricCard label="Doanh thu tháng" value={currencyFormatter.format(metrics.totalRevenueMonth)} helper="Tổng booking đã thanh toán" icon={<CircleDollarSign className="h-5 w-5" />} />
       </div>
 

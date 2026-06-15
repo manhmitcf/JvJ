@@ -4,19 +4,29 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { type Therapist } from "@/types/therapist";
 import { formatRating } from "@/features/public/lib/formatters";
-import { getTherapistStitchImage } from "@/features/public/lib/stitch-assets";
 
 interface TherapistCardProps {
   readonly therapist: Therapist;
 }
 
+function getInitials(name: string) {
+  const parts = name.trim().split(/\s+/).slice(0, 2);
+  return parts.map((part) => (part[0] ?? "").toUpperCase()).join("") || "?";
+}
+
 export function TherapistCard({ therapist }: TherapistCardProps) {
-  const imageSrc = getTherapistStitchImage(therapist.id, therapist.avatarUrl ?? "/mock/avatars/therapist-1.jpg");
+  const imageSrc = therapist.avatarUrl?.trim();
 
   return (
     <Card className="h-full overflow-hidden border-border/80 bg-card shadow-[0_4px_20px_rgba(15,118,110,0.04)]">
       <div className="aspect-[16/10] overflow-hidden border-b border-border/60 bg-muted/40">
-        <img src={imageSrc} alt={therapist.fullName} loading="lazy" className="h-full w-full object-cover object-top" />
+        {imageSrc ? (
+          <img src={imageSrc} alt={therapist.fullName} loading="lazy" className="h-full w-full object-cover object-top" />
+        ) : (
+          <div className="flex h-full w-full items-center justify-center bg-soft-mint text-primary">
+            <span className="text-2xl font-black">{getInitials(therapist.fullName)}</span>
+          </div>
+        )}
       </div>
       <CardHeader className="space-y-4">
         <div className="flex items-start justify-between gap-3">

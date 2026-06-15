@@ -26,8 +26,8 @@ class Spa(models.Model):
     name = models.CharField(max_length=255)
     address = models.TextField()
     district = models.CharField(max_length=100)
-    latitude = models.DecimalField(max_digits=9, decimal_places=6)
-    longitude = models.DecimalField(max_digits=9, decimal_places=6)
+    latitude = models.DecimalField(max_digits=9, decimal_places=6, blank=True, null=True)
+    longitude = models.DecimalField(max_digits=9, decimal_places=6, blank=True, null=True)
     if GIS_AVAILABLE:
         location = gis_models.PointField(geography=True, srid=4326, null=True, editable=False)
     else:
@@ -38,6 +38,7 @@ class Spa(models.Model):
     close_time = models.TimeField()
     description = models.TextField()
     status = models.CharField(max_length=10, choices=STATUS_CHOICES, default="active")
+    image = models.URLField(max_length=500, blank=True, default="")
     image_urls = models.JSONField(default=list, blank=True)
     linked_treatment_count = models.IntegerField(default=0)
     created_at = models.DateTimeField(auto_now_add=True)

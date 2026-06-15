@@ -19,6 +19,7 @@ export type AdminOverviewMetrics = {
   activeTherapists: number;
   newBookingsToday: number;
   pendingTherapistApprovals: number;
+  pendingCredentialUpdates: number;
   totalRevenueMonth: number;
   completedBookingsMonth: number;
 };
@@ -52,6 +53,23 @@ export type TherapistApproval = {
   submittedAt: string;
   status: TherapistApprovalStatus;
   rejectionReason?: string;
+  pendingCitizenIdFrontUrl?: string;
+  pendingCitizenIdBackUrl?: string;
+  pendingCertificateUrls: string[];
+  hasPendingCredentialUpdate?: boolean;
+};
+
+export type CredentialUpdate = {
+  id: string;
+  therapistId: string;
+  fullName: string;
+  email: string;
+  avatarUrl?: string;
+  phone: string;
+  pendingCitizenIdFrontUrl?: string;
+  pendingCitizenIdBackUrl?: string;
+  pendingCertificateUrls: string[];
+  updatedAt: string;
 };
 
 export type AdminBookingRow = {

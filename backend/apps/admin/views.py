@@ -4,6 +4,7 @@ from django.contrib.auth import get_user_model
 from django.db.models import Count, Q, Sum
 from django.utils import timezone
 from rest_framework import generics, permissions, status
+from rest_framework.parsers import FormParser, MultiPartParser
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
@@ -17,7 +18,9 @@ from apps.therapists.models import TherapistProfile
 from .serializers import (
     AdminBookingDetailSerializer,
     AdminBookingListSerializer,
+    AdminCredentialUpdateSerializer,
     AdminSpaCreateSerializer,
+    AdminSpaLinkTreatmentsSerializer,
     AdminSpaListSerializer,
     AdminSpaUpdateSerializer,
     AdminTherapistDetailSerializer,
@@ -56,6 +59,14 @@ class AdminStatsView(APIView):
         new_bookings_today = Booking.objects.filter(created_at__date=today).count()
         pending_approvals = TherapistProfile.objects.filter(
             status="pending_approval"
+        ).count()
+        pending_credential_updates = TherapistProfile.objects.filter(
+            status="approved",
+        ).filter(
+            Q(pending_citizen_id_front_url__isnull=False) & ~Q(pending_citizen_id_front_url="")
+            | Q(pending_citizen_id_back_url__isnull=False) & ~Q(pending_citizen_id_back_url="")
+            | Q(pending_certificate_urls__isnull=False)
+            & ~Q(pending_certificate_urls=[])
         ).count()
 
         # Monthly revenue & completed bookings
@@ -104,13 +115,21 @@ class AdminStatsView(APIView):
                 'bookings': stat.get('bookings', 0) or 0,
             })
 
-        # Alerts: chỉ 1 alert về therapist chờ duyệt
+        # Alerts
         alerts = []
         if pending_approvals > 0:
             alerts.append({
                 'id': 'pending-therapists',
                 'title': 'Hồ sơ kỹ thuật viên chờ duyệt',
                 'description': f'{pending_approvals} hồ sơ cần Admin kiểm tra chứng chỉ',
+                'tone': 'amber',
+                'href': '/admin/therapist-approvals',
+            })
+        if pending_credential_updates > 0:
+            alerts.append({
+                'id': 'credential-updates',
+                'title': 'Cập nhật giấy tờ KTV',
+                'description': f'{pending_credential_updates} KTV đã duyệt cập nhật CCCD/chứng chỉ',
                 'tone': 'amber',
                 'href': '/admin/therapist-approvals',
             })
@@ -121,6 +140,7 @@ class AdminStatsView(APIView):
                 "active_therapists": active_therapists,
                 "new_bookings_today": new_bookings_today,
                 "pending_therapist_approvals": pending_approvals,
+                "pending_credential_updates": pending_credential_updates,
                 "total_revenue_month": monthly["total_revenue"] or 0,
                 "completed_bookings_month": monthly["completed_count"] or 0,
                 "chart_7_days": chart_7_days,
@@ -239,7 +259,17 @@ class AdminTherapistApproveView(APIView):
         profile.reviewed_at = timezone.now()
         profile.user.role = "therapist"
         profile.user.save(update_fields=["role", "updated_at"])
-        profile.save(update_fields=["status", "reviewed_by", "reviewed_at", "updated_at"])
+
+        # Sync pending credentials to approved fields
+        profile.citizen_id = profile.pending_citizen_id or ""
+        profile.citizen_id_front_url = profile.pending_citizen_id_front_url or ""
+        profile.citizen_id_back_url = profile.pending_citizen_id_back_url or ""
+        profile.certificate_urls = profile.pending_certificate_urls or []
+
+        profile.save(update_fields=[
+            "status", "reviewed_by", "reviewed_at", "updated_at",
+            "citizen_id", "citizen_id_front_url", "citizen_id_back_url", "certificate_urls",
+        ])
 
         return Response({"data": {"status": "approved", "message": "Đã duyệt hồ sơ kỹ thuật viên"}})
 
@@ -264,6 +294,123 @@ class AdminTherapistRejectView(APIView):
         profile.save(update_fields=["status", "reviewed_by", "reviewed_at", "rejection_reason", "updated_at"])
 
         return Response({"data": {"status": "rejected", "message": "Đã từ chối hồ sơ"}})
+
+
+class AdminCredentialUpdateListView(generics.ListAPIView):
+    """GET /api/v1/admin/therapists/credential-updates/?status=pending|approved|rejected|all"""
+    permission_classes = [IsActiveUser, IsAdminRole]
+    serializer_class = AdminCredentialUpdateSerializer
+    pagination_class = StandardPagination
+
+    def get_queryset(self):
+        qs = (
+            TherapistProfile.objects
+            .select_related("user")
+            .order_by("-updated_at")
+        )
+        qs = qs.filter(status="approved")
+
+        has_pending = (
+            Q(pending_citizen_id_front_url__gt="")
+            | Q(pending_citizen_id_back_url__gt="")
+            | ~Q(pending_certificate_urls=[])
+        )
+
+        status = self.request.query_params.get("status", "pending")
+        if status == "all":
+            qs = qs.filter(
+                Q(credential_update_status__in=["pending", "approved", "rejected"])
+                | (Q(credential_update_status="none") & has_pending)
+            )
+        elif status == "pending":
+            qs = qs.filter(
+                Q(credential_update_status="pending")
+                | (Q(credential_update_status="none") & has_pending)
+            )
+        elif status in ("approved", "rejected"):
+            qs = qs.filter(credential_update_status=status)
+        else:
+            qs = qs.filter(
+                Q(credential_update_status="pending")
+                | (Q(credential_update_status="none") & has_pending)
+            )
+
+        return qs
+
+    def get_paginated_response(self, data):
+        response = super().get_paginated_response(data)
+        return Response({"data": response.data})
+
+
+class AdminCredentialUpdateDetailView(generics.RetrieveAPIView):
+    """GET /api/v1/admin/therapists/:id/credential-update/"""
+    permission_classes = [IsActiveUser, IsAdminRole]
+    serializer_class = AdminCredentialUpdateSerializer
+    queryset = TherapistProfile.objects.select_related("user")
+    lookup_field = "id"
+
+    def retrieve(self, request, *args, **kwargs):
+        response = super().retrieve(request, *args, **kwargs)
+        return Response({"data": response.data})
+
+
+class AdminCredentialApproveView(APIView):
+    """POST /api/v1/admin/therapists/:id/approve-credentials/"""
+    permission_classes = [IsActiveUser, IsAdminRole]
+
+    def post(self, request, id):
+        try:
+            profile = TherapistProfile.objects.select_related("user").get(id=id)
+        except TherapistProfile.DoesNotExist:
+            return Response({"error": {"code": "NOT_FOUND", "message": "Hồ sơ không tồn tại"}}, status=status.HTTP_404_NOT_FOUND)
+
+        profile.citizen_id = profile.pending_citizen_id or ""
+        profile.citizen_id_front_url = profile.pending_citizen_id_front_url or ""
+        profile.citizen_id_back_url = profile.pending_citizen_id_back_url or ""
+        profile.certificate_urls = profile.pending_certificate_urls or []
+
+        profile.pending_citizen_id = ""
+        profile.pending_citizen_id_front_url = ""
+        profile.pending_citizen_id_back_url = ""
+        profile.pending_certificate_urls = []
+        profile.credential_update_status = "approved"
+
+        profile.save(update_fields=[
+            "citizen_id", "citizen_id_front_url", "citizen_id_back_url",
+            "certificate_urls",
+            "pending_citizen_id", "pending_citizen_id_front_url",
+            "pending_citizen_id_back_url", "pending_certificate_urls",
+            "credential_update_status",
+            "updated_at",
+        ])
+
+        return Response({"data": {"message": "Đã duyệt cập nhật giấy tờ"}})
+
+
+class AdminCredentialRejectView(APIView):
+    """POST /api/v1/admin/therapists/:id/reject-credentials/"""
+    permission_classes = [IsActiveUser, IsAdminRole]
+
+    def post(self, request, id):
+        try:
+            profile = TherapistProfile.objects.select_related("user").get(id=id)
+        except TherapistProfile.DoesNotExist:
+            return Response({"error": {"code": "NOT_FOUND", "message": "Hồ sơ không tồn tại"}}, status=status.HTTP_404_NOT_FOUND)
+
+        profile.pending_citizen_id = ""
+        profile.pending_citizen_id_front_url = ""
+        profile.pending_citizen_id_back_url = ""
+        profile.pending_certificate_urls = []
+        profile.credential_update_status = "rejected"
+
+        profile.save(update_fields=[
+            "pending_citizen_id", "pending_citizen_id_front_url",
+            "pending_citizen_id_back_url", "pending_certificate_urls",
+            "credential_update_status",
+            "updated_at",
+        ])
+
+        return Response({"data": {"message": "Đã hủy yêu cầu cập nhật giấy tờ"}})
 
 
 class AdminBookingListView(generics.ListAPIView):
@@ -349,13 +496,37 @@ class AdminSpaUpdateView(generics.RetrieveUpdateDestroyAPIView):
     """GET/PUT/DELETE /api/v1/admin/spas/:id/"""
     permission_classes = [IsActiveUser, IsAdminRole]
     serializer_class = AdminSpaUpdateSerializer
-    queryset = Spa.objects.all()
+    queryset = Spa.objects.all().prefetch_related("treatments__therapist")
     lookup_field = "id"
 
+    def retrieve(self, request, *args, **kwargs):
+        response = super().retrieve(request, *args, **kwargs)
+        return Response({"data": response.data})
+
     def perform_destroy(self, instance):
-        # Soft delete: set status=hidden thay vì xóa thật
-        instance.status = "hidden"
-        instance.save(update_fields=["status", "updated_at"])
+        instance.delete()
+
+
+class AdminSpaLinkTreatmentsView(APIView):
+    """POST /api/v1/admin/spas/:id/link-treatments/"""
+    permission_classes = [IsActiveUser, IsAdminRole]
+
+    def post(self, request, id):
+        try:
+            spa = Spa.objects.get(id=id)
+        except Spa.DoesNotExist:
+            return Response(
+                {"error": {"code": "NOT_FOUND", "message": "Spa không tồn tại"}},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        serializer = AdminSpaLinkTreatmentsSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        serializer.update(spa, serializer.validated_data)
+        return Response(
+            {"data": {"id": str(spa.id), "linked_treatment_count": spa.linked_treatment_count}},
+            status=status.HTTP_200_OK,
+        )
 
 
 class AdminReviewVisibilityView(APIView):

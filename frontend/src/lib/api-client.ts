@@ -130,7 +130,11 @@ async function apiFetch<T>(endpoint: string, options?: RequestInit): Promise<T> 
       throw new Error(errorMessage);
     }
 
-    const json = await response.json();
+    const text = await response.text();
+    if (!text.trim()) {
+      return undefined as T;
+    }
+    const json = JSON.parse(text) as T;
     return (json.data !== undefined ? json.data : json) as T;
   };
 

@@ -467,7 +467,12 @@ export function AppointmentDetailPage() {
                 <User className="h-5 w-5" />
                 Xem hồ sơ kỹ thuật viên
               </Link>
-              <button className="flex w-full items-center justify-center gap-2 rounded-xl border-2 border-[#bdc9c6] py-3 font-semibold text-[#3e4947] transition-all hover:bg-[#f1f4f3]">
+              <button
+                onClick={() => {
+                  import("@/features/conversation/components/ChatPanel").then(m => m.openChatWithTherapist(display.therapistId));
+                }}
+                className="flex w-full items-center justify-center gap-2 rounded-xl border-2 border-[#bdc9c6] py-3 font-semibold text-[#3e4947] transition-all hover:bg-[#f1f4f3]"
+              >
                 <MessageCircle className="h-5 w-5" />
                 Nhắn tin
               </button>

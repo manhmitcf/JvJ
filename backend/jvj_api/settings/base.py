@@ -46,6 +46,7 @@ LOCAL_APPS = [
     "apps.payments",
     "apps.reviews",
     "apps.admin",
+    "apps.conversations",
 ]
 
 INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
@@ -97,7 +98,25 @@ def _parse_database_url(url):
             "NAME": str(db_path),
         }
 
-    # PostgreSQL
+    # PostgreSQL - manual parse to handle special chars like @ in password
+    if parsed.scheme == "postgresql":
+        import re
+
+        match = re.match(r'^postgresql://(.+)@([^/]+)/?(.*)$', url)
+        if match:
+            userinfo, hostinfo, db_name = match.groups()
+            user, password = (userinfo.split(":", 1) + [""])[:2]
+            host, port = (hostinfo.split(":", 1) + [""])[:2]
+            return {
+                "ENGINE": "django.db.backends.postgresql",
+                "NAME": db_name or "postgres",
+                "USER": user or "postgres",
+                "PASSWORD": password or "",
+                "HOST": host or "localhost",
+                "PORT": port or "5432",
+            }
+
+    # Fallback to standard parsing
     db_name = (parsed.path or "/").lstrip("/")
     return {
         "ENGINE": "django.db.backends.postgresql",

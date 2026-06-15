@@ -60,3 +60,46 @@ class FileUploadView(APIView):
             url = request.build_absolute_uri(f"{settings.MEDIA_URL}{saved_path}")
 
         return Response({"data": {"url": url}}, status=status.HTTP_201_CREATED)
+
+
+class MultiFileUploadView(APIView):
+    """POST /api/v1/upload/multiple/ — Upload nhiều file ảnh cùng lúc."""
+
+    permission_classes = [permissions.AllowAny]
+    parser_classes = [MultiPartParser]
+
+    def post(self, request):
+        uploaded_files = request.FILES.getlist("files")
+        if not uploaded_files:
+            return Response(
+                {"error": {"code": 400, "message": "Không tìm thấy file"}},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        allowed_types = ["image/jpeg", "image/png", "image/webp"]
+        urls = []
+
+        for uploaded_file in uploaded_files:
+            if uploaded_file.size > 5 * 1024 * 1024:
+                return Response(
+                    {"error": {"code": 400, "message": f"File '{uploaded_file.name}' quá lớn (tối đa 5MB)"}},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+            if uploaded_file.content_type not in allowed_types:
+                return Response(
+                    {"error": {"code": 400, "message": f"File '{uploaded_file.name}' không đúng định dạng (chỉ chấp nhận JPG, PNG, WebP)"}},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
+            ext = Path(uploaded_file.name).suffix
+            filename = f"uploads/{uuid.uuid4()}{ext}"
+            saved_path = default_storage.save(filename, uploaded_file)
+
+            if saved_path.startswith("/"):
+                url = request.build_absolute_uri(saved_path)
+            else:
+                url = request.build_absolute_uri(f"{settings.MEDIA_URL}{saved_path}")
+
+            urls.append(url)
+
+        return Response({"data": {"urls": urls}}, status=status.HTTP_201_CREATED)

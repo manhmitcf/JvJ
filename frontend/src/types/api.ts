@@ -1,4 +1,5 @@
 export type TherapistProfileDto = {
+  id: string;
   email: string;
   phone: string;
   full_name: string;
@@ -16,6 +17,11 @@ export type TherapistProfileDto = {
   citizen_id_front_url?: string;
   citizen_id_back_url?: string;
   rejection_reason: string;
+  service_areas: string[];
+  pending_citizen_id?: string;
+  pending_citizen_id_front_url?: string;
+  pending_citizen_id_back_url?: string;
+  pending_certificate_urls: string[];
 };
 
 export type ReviewDto = {

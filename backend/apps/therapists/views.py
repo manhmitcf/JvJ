@@ -227,7 +227,9 @@ class TherapistApplyView(APIView):
             serializer.is_valid(raise_exception=True)
             profile.years_of_experience = serializer.validated_data["years_of_experience"]
             profile.specialties = serializer.validated_data["specialties"]
-            profile.certificate_urls = serializer.validated_data.get("certificate_urls", [])
+            if "service_areas" in serializer.validated_data:
+                profile.service_areas = serializer.validated_data["service_areas"]
+            profile.pending_certificate_urls = serializer.validated_data.get("certificate_urls", [])
             profile.status = "pending_approval"
             profile.rejection_reason = ""
             profile.save()
@@ -251,7 +253,8 @@ class TherapistApplyView(APIView):
             user=request.user,
             years_of_experience=serializer.validated_data["years_of_experience"],
             specialties=serializer.validated_data["specialties"],
-            certificate_urls=serializer.validated_data.get("certificate_urls", []),
+            service_areas=serializer.validated_data.get("service_areas", []),
+            pending_certificate_urls=serializer.validated_data.get("certificate_urls", []),
             status="pending_approval",
         )
 
@@ -402,12 +405,16 @@ class TherapistProfileView(APIView):
                 {"error": {"code": "NOT_FOUND", "message": "Chưa có hồ sơ Therapist"}},
                 status=status.HTTP_404_NOT_FOUND,
             )
+        print(f"[PROFILE PUT] user={request.user.email}, data_keys={list(request.data.keys())}")
+        print(f"[PROFILE PUT] data={dict(request.data)}")
         serializer = TherapistProfileSerializer(
             instance=request.user.therapist_profile, data=request.data,
+            context={"request": request},
         )
         serializer.is_valid(raise_exception=True)
-        serializer.save()
-        return Response({"data": serializer.data})
+        serializer.is_valid(raise_exception=True)
+        updated_profile = serializer.save()
+        return Response({"data": TherapistProfileSerializer(updated_profile, context={"request": request}).data})
 
 
 class TherapistOnlineToggleView(APIView):

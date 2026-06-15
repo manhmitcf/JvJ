@@ -51,6 +51,25 @@ import { useScheduleStore } from "../stores/schedule-store";
 import { useTreatmentStore } from "../stores/treatment-store";
 import { useWalletStore } from "../stores/wallet-store";
 import { uploadFile } from "@/services/upload-service";
+import { therapistAssets } from "@/features/public/lib/stitch-assets";
+
+const SPECIALTIES = [
+  "Cổ và gáy",
+  "Vật lý trị liệu",
+  "Phục hồi chức năng",
+  "Ấn huyệt",
+  "Đông y",
+];
+
+const SERVICE_AREAS = [
+  "Hải Châu",
+  "Thanh Khê",
+  "Sơn Trà",
+  "Ngũ Hành Sơn",
+  "Cẩm Lệ",
+  "Liên Chiểu",
+  "Hòa Vang",
+];
 
 const money = new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" });
 const moneyCompact = new Intl.NumberFormat("vi-VN", { notation: "compact", maximumFractionDigits: 1 });
@@ -138,8 +157,7 @@ export function TherapistHomePage() {
       <div className="grid gap-lg xl:grid-cols-[minmax(0,1.45fr)_minmax(320px,0.85fr)]">
         <TodayAppointments
           appointments={todayAppointments}
-          images={PLACEHOLDER_AVATARS}
-          onViewDetails={(id) => setSelectedAppointmentId((prev) => (prev === id ? null : id))}
+          images={[therapistAssets.dashboardCustomerA, therapistAssets.dashboardCustomerB, therapistAssets.bookingImageA, therapistAssets.bookingImageB]}
         />
 
         <section className="space-y-md">
@@ -387,7 +405,7 @@ export function TherapistSchedulePage() {
 
         <aside className="space-y-lg">
           <SlotFormDialog
-            image={PLACEHOLDER_SCHEDULE_IMAGE}
+            image={therapistAssets.scheduleTherapistImage}
             slots={slots}
             onCreate={createSlot}
             onDelete={deleteSlot}
@@ -546,7 +564,7 @@ export function TherapistBookingsPage() {
         <div>
           <BookingDetailDrawer
             booking={selectedBooking}
-            image={PLACEHOLDER_BOOKING_IMAGE}
+            image={therapistAssets.bookingImageA}
             customerName={getCustomerName(selectedBooking)}
             treatmentName={getTreatmentName(selectedBooking)}
             onStart={(bookingId) => void startBooking(bookingId)}
@@ -718,14 +736,105 @@ export function TherapistWalletPage() {
 export function TherapistProfilePage() {
   const { profile, fetchProfile, saveProfile, toggleOnline } = useProfileStore();
 
+  const [isEditing, setIsEditing] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
+  const [saveSuccess, setSaveSuccess] = useState(false);
   const [uploadingPortrait, setUploadingPortrait] = useState(false);
   const [uploadingCitizenId, setUploadingCitizenId] = useState<'front' | 'back' | null>(null);
   const [uploadingCertificate, setUploadingCertificate] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
+  const [credentialDirty, setCredentialDirty] = useState(false);
+  // Track whether the initial profile load sync has completed — only sync on first load,
+  // not on subsequent profile updates from saves/uploads that would clobber unsaved form edits.
+  const [profileSynced, setProfileSynced] = useState(false);
+
+  const [editForm, setEditForm] = useState({
+    fullName: "",
+    phone: "",
+    bio: "",
+    yearsOfExperience: 0,
+    specialties: [] as string[],
+    serviceAreas: [] as string[],
+  });
+
+  // Sync edit form only on initial profile load (profileSynced = false).
+  // After that, profile updates from saves/uploads are ignored so unsaved form edits
+  // (e.g. serviceAreas changes made before uploading) are not clobbered.
+  useEffect(() => {
+    if (profile && !profileSynced) {
+      setEditForm({
+        fullName: profile.fullName ?? "",
+        phone: profile.phone ?? "",
+        bio: profile.bio ?? "",
+        yearsOfExperience: profile.yearsOfExperience ?? 0,
+        specialties: profile.specialties ?? [],
+        serviceAreas: profile.serviceAreas ?? [],
+      });
+      setProfileSynced(true);
+    }
+  }, [profile, profileSynced]);
 
   useEffect(() => {
     void fetchProfile();
   }, [fetchProfile]);
+
+  const hasChanges = profile && (credentialDirty ||
+    editForm.fullName !== (profile.fullName ?? "") ||
+    editForm.phone !== (profile.phone ?? "") ||
+    editForm.bio !== (profile.bio ?? "") ||
+    editForm.yearsOfExperience !== (profile.yearsOfExperience ?? 0) ||
+    JSON.stringify(editForm.specialties) !== JSON.stringify(profile.specialties ?? []) ||
+    JSON.stringify(editForm.serviceAreas) !== JSON.stringify(profile.serviceAreas ?? [])
+  );
+
+  const handleFieldChange = (field: keyof typeof editForm, value: typeof editForm[keyof typeof editForm]) => {
+    setEditForm((prev) => ({ ...prev, [field]: value }));
+    setSaveSuccess(false);
+    setSaveError(null);
+  };
+
+  const handleSave = async () => {
+    if (!profile || isSaving) return;
+    setIsSaving(true);
+    setSaveError(null);
+
+    try {
+      await saveProfile({
+        full_name: editForm.fullName,
+        phone: editForm.phone,
+        bio: editForm.bio,
+        years_of_experience: editForm.yearsOfExperience,
+        specialties: editForm.specialties,
+        serviceAreas: editForm.serviceAreas,
+      });
+      setCredentialDirty(false);
+      setIsEditing(false);
+      setSaveSuccess(true);
+      setTimeout(() => setSaveSuccess(false), 3000);
+    } catch (err) {
+      setSaveError((err as Error).message || "Không thể lưu thay đổi.");
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleCancel = () => {
+    if (profile) {
+      setEditForm({
+        fullName: profile.fullName ?? "",
+        phone: profile.phone ?? "",
+        bio: profile.bio ?? "",
+        yearsOfExperience: profile.yearsOfExperience ?? 0,
+        specialties: profile.specialties ?? [],
+        serviceAreas: profile.serviceAreas ?? [],
+      });
+    }
+    setCredentialDirty(false);
+    setProfileSynced(false);
+    setIsEditing(false);
+    setSaveError(null);
+  };
 
   const handlePortraitUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -735,9 +844,9 @@ export function TherapistProfilePage() {
     setUploadError(null);
     try {
       const url = await uploadFile(file);
-      // Update profile với portrait URL mới
       await saveProfile({ portraitUrl: url });
-      event.target.value = ""; // Reset input
+      setCredentialDirty(true);
+      event.target.value = "";
     } catch (error) {
       const message = error instanceof Error ? error.message : "Upload thất bại";
       setUploadError(message);
@@ -755,7 +864,8 @@ export function TherapistProfilePage() {
     setUploadError(null);
     try {
       const url = await uploadFile(file);
-      await saveProfile({ citizenIdFrontUrl: url });
+      await saveProfile({ pending_citizen_id_front_url: url });
+      setCredentialDirty(true);
       event.target.value = "";
     } catch (error) {
       const message = error instanceof Error ? error.message : "Upload thất bại";
@@ -773,7 +883,8 @@ export function TherapistProfilePage() {
     setUploadError(null);
     try {
       const url = await uploadFile(file);
-      await saveProfile({ citizenIdBackUrl: url });
+      await saveProfile({ pending_citizen_id_back_url: url });
+      setCredentialDirty(true);
       event.target.value = "";
     } catch (error) {
       const message = error instanceof Error ? error.message : "Upload thất bại";
@@ -792,12 +903,8 @@ export function TherapistProfilePage() {
     try {
       const uploadPromises = Array.from(files).map(f => uploadFile(f));
       const urls = await Promise.all(uploadPromises);
-
-      // Merge with existing certificates - get from profile state
-      const existingCertificates = profile?.certificateUrls ?? [];
-      const newCertificateUrls = [...existingCertificates, ...urls];
-      await saveProfile({ certificateUrls: newCertificateUrls });
-
+      await saveProfile({ pending_certificate_urls: urls });
+      setCredentialDirty(true);
       event.target.value = "";
     } catch (error) {
       const message = error instanceof Error ? error.message : "Upload thất bại";
@@ -807,19 +914,21 @@ export function TherapistProfilePage() {
     }
   };
 
-  // Profile data — use API data when available, fallback to hardcoded display values
-  const therapistName = profile?.fullName || "Trần Hoài Nam";
-  const therapistEmail = profile?.email || "nam.tran@jvjwellness.com";
-  const therapistPhone = profile?.phone || "0905 ••• •••";
-  const therapistBio = profile?.bio || "Kỹ thuật viên chuyên nghiệp với hơn 6 năm kinh nghiệm trong lĩnh vực massage trị liệu và phục hồi chức năng.";
-  const yearsExperience = profile?.yearsOfExperience ?? 6;
-  const specialties = profile?.specialties && profile.specialties.length > 0 ? profile.specialties : ["Massage cổ vai gáy", "Bấm huyệt"];
   const rating = profile?.rating ?? 0;
   const completedBookings = profile?.completedBookings ?? 0;
-  const certificateUrls = profile?.certificateUrls ?? [];
   const isOnline = profile?.isOnline ?? true;
+  const displayServiceAreas = isEditing ? editForm.serviceAreas : (profile?.serviceAreas ?? []);
 
-  const serviceAreas = ["Hải Châu", "Thanh Khê", "Sơn Trà", "Ngũ Hành Sơn"];
+  const pendingCertUrls = profile?.pendingCertificateUrls ?? [];
+
+  const pendingCitizenFront = profile?.pendingCitizenIdFrontUrl;
+  const pendingCitizenBack = profile?.pendingCitizenIdBackUrl;
+  const hasPendingCredentials = !!(pendingCitizenFront || pendingCitizenBack || pendingCertUrls.length > 0);
+  const hasApprovedCredentials = !!(profile?.citizenIdFrontUrl || profile?.citizenIdBackUrl || (profile?.certificateUrls?.length ?? 0) > 0);
+
+  const displayCitizenFront = isEditing ? (pendingCitizenFront || profile?.citizenIdFrontUrl || "") : (profile?.citizenIdFrontUrl || pendingCitizenFront || "");
+  const displayCitizenBack = isEditing ? (pendingCitizenBack || profile?.citizenIdBackUrl || "") : (profile?.citizenIdBackUrl || pendingCitizenBack || "");
+  const displayCertUrls = isEditing ? (pendingCertUrls.length > 0 ? pendingCertUrls : (profile?.certificateUrls ?? [])) : ((profile?.certificateUrls?.length ?? 0) > 0 ? profile?.certificateUrls : pendingCertUrls);
 
   return (
     <PageShell>
@@ -830,49 +939,134 @@ export function TherapistProfilePage() {
         action={
           <div className="flex flex-wrap gap-sm">
             <SecondaryButton><EyeOff className="h-4 w-4" /> Xem hồ sơ công khai</SecondaryButton>
-            <PrimaryButton onClick={() => void saveProfile({})}>Lưu thay đổi</PrimaryButton>
+            {isEditing ? (
+              <>
+                <button
+                  onClick={handleCancel}
+                  disabled={isSaving}
+                  className="inline-flex items-center gap-xs rounded-full border border-botanical-border bg-white px-md py-sm text-body-sm font-black text-sage-secondary transition hover:border-primary hover:text-primary disabled:opacity-50"
+                >
+                  Hủy
+                </button>
+                <PrimaryButton
+                  onClick={() => void handleSave()}
+                  disabled={isSaving || !hasChanges}
+                >
+                  {isSaving ? "Đang lưu..." : "Lưu thay đổi"}
+                </PrimaryButton>
+              </>
+            ) : (
+              <button
+                onClick={() => setIsEditing(true)}
+                className="inline-flex items-center gap-xs rounded-full bg-soft-mint px-md py-sm text-body-sm font-black text-primary transition hover:bg-primary hover:text-white"
+              >
+                <Pencil className="h-4 w-4" /> Chỉnh sửa hồ sơ
+              </button>
+            )}
           </div>
         }
       />
+
+      {saveSuccess && (
+        <div className="flex items-center gap-md rounded-2xl border border-success-leaf bg-[#DCFCE7] p-md text-body font-semibold text-success-leaf">
+          <CheckCircle2 className="h-5 w-5" />
+          Thay đổi đã được lưu thành công!
+        </div>
+      )}
+
+      {saveError && (
+        <div className="flex items-center gap-md rounded-2xl border border-red-200 bg-red-50 p-md text-body font-semibold text-red-700">
+          {saveError}
+        </div>
+      )}
 
       <div className="grid gap-lg xl:grid-cols-[minmax(0,1fr)_380px]">
         <div className="space-y-lg">
           <section className="rounded-[2rem] border border-botanical-border bg-white p-lg shadow-stitch-soft">
             <div className="mb-lg flex items-center justify-between">
               <h2 className="inline-flex items-center gap-sm text-xl font-black text-ink-primary"><UserRound className="h-5 w-5 text-primary" /> Thông tin cá nhân</h2>
-              <button className="text-body-sm font-black text-primary">Chỉnh sửa</button>
             </div>
             <div className="grid gap-lg lg:grid-cols-[160px_minmax(0,1fr)]">
               <div className="text-center">
-                <label className={`relative mx-auto block h-32 w-32 overflow-hidden rounded-[1.5rem] border-2 border-botanical-border transition ${uploadingPortrait ? 'cursor-wait opacity-60' : 'cursor-pointer hover:border-primary'}`}>
+                <label className={`relative mx-auto block h-32 w-32 overflow-hidden rounded-[1.5rem] border-2 border-botanical-border transition ${uploadingPortrait ? 'cursor-wait opacity-60' : isEditing ? 'cursor-pointer hover:border-primary' : 'cursor-not-allowed'}`}>
                   <img
                     src={profile?.portraitUrl || profile?.avatarUrl || "/placeholder-avatar.png"}
                     alt="Ảnh chân dung kỹ thuật viên"
                     className="h-full w-full object-cover"
                   />
-                  <div className="absolute inset-x-0 bottom-0 bg-black/40 py-xs text-label-caption font-black text-white">
-                    {uploadingPortrait ? "Đang tải..." : "Đổi ảnh"}
-                  </div>
+                  {isEditing && (
+                    <div className="absolute inset-x-0 bottom-0 bg-black/40 py-xs text-label-caption font-black text-white">
+                      {uploadingPortrait ? "Đang tải..." : "Đổi ảnh"}
+                    </div>
+                  )}
                   <input
                     type="file"
                     accept="image/jpeg,image/png,image/webp"
                     onChange={handlePortraitUpload}
-                    disabled={uploadingPortrait}
+                    disabled={!isEditing || uploadingPortrait}
                     className="sr-only"
                   />
                 </label>
                 <p className="mt-sm text-label-caption font-bold text-sage-secondary">
-                  Tải lên ảnh chân dung
+                  {isEditing ? "Tải lên ảnh chân dung" : "Chỉnh sửa để đổi ảnh"}
                 </p>
                 {uploadError && (
                   <p className="mt-xs text-xs font-semibold text-red-600">{uploadError}</p>
                 )}
               </div>
               <div className="grid gap-md md:grid-cols-2">
-                <TextField label="Họ và tên" value={therapistName} />
-                <TextField label="Email" value={therapistEmail} />
-                <TextField label="Số điện thoại" value={therapistPhone} />
-                <TextField label="Trạng thái online" value={isOnline ? "Đang nhận lịch" : "Tạm ngưng"} />
+                {/* Họ và tên */}
+                <div>
+                  <label className="mb-xs block text-body-sm font-black text-ink-primary">Họ và tên</label>
+                  {isEditing ? (
+                    <input
+                      type="text"
+                      value={editForm.fullName}
+                      onChange={(e) => handleFieldChange("fullName", e.target.value)}
+                      className="h-12 w-full rounded-2xl border border-botanical-border bg-white px-md text-body-sm font-semibold text-ink-primary outline-none focus:border-primary focus:ring-4 focus:ring-soft-mint"
+                      placeholder="Nhập họ và tên"
+                    />
+                  ) : (
+                    <div className="flex h-12 items-center rounded-2xl border border-botanical-border bg-warm-bg px-md text-body-sm font-semibold text-ink-primary">
+                      {editForm.fullName || "—"}
+                    </div>
+                  )}
+                </div>
+
+                {/* Email — không sửa được */}
+                <div>
+                  <label className="mb-xs block text-body-sm font-black text-ink-primary">Email</label>
+                  <div className="flex h-12 items-center rounded-2xl border border-botanical-border bg-warm-bg px-md text-body-sm font-semibold text-ink-primary">
+                    {profile?.email || "—"}
+                  </div>
+                </div>
+
+                {/* Số điện thoại */}
+                <div>
+                  <label className="mb-xs block text-body-sm font-black text-ink-primary">Số điện thoại</label>
+                  {isEditing ? (
+                    <input
+                      type="tel"
+                      value={editForm.phone}
+                      onChange={(e) => handleFieldChange("phone", e.target.value)}
+                      className="h-12 w-full rounded-2xl border border-botanical-border bg-white px-md text-body-sm font-semibold text-ink-primary outline-none focus:border-primary focus:ring-4 focus:ring-soft-mint"
+                      placeholder="Nhập số điện thoại"
+                    />
+                  ) : (
+                    <div className="flex h-12 items-center rounded-2xl border border-botanical-border bg-warm-bg px-md text-body-sm font-semibold text-ink-primary">
+                      {editForm.phone || "—"}
+                    </div>
+                  )}
+                </div>
+
+                {/* Trạng thái online */}
+                <div>
+                  <label className="mb-xs block text-body-sm font-black text-ink-primary">Trạng thái online</label>
+                  <div className="flex h-12 items-center gap-sm rounded-2xl border border-botanical-border bg-warm-bg px-md text-body-sm font-semibold text-ink-primary">
+                    <span className={cn("h-2 w-2 rounded-full", isOnline ? "bg-success-leaf" : "bg-sage-secondary/40")} />
+                    {isOnline ? "Đang nhận lịch" : "Tạm ngưng"}
+                  </div>
+                </div>
               </div>
             </div>
           </section>
@@ -880,104 +1074,239 @@ export function TherapistProfilePage() {
           <section className="rounded-[2rem] border border-botanical-border bg-white p-lg shadow-stitch-soft">
             <div className="mb-lg flex items-center justify-between">
               <h2 className="inline-flex items-center gap-sm text-xl font-black text-ink-primary"><HeartPulse className="h-5 w-5 text-primary" /> Thông tin chuyên môn</h2>
-              <button className="text-body-sm font-black text-primary">Chỉnh sửa</button>
             </div>
             <div className="space-y-md">
               <div className="grid gap-md md:grid-cols-2">
+                {/* Kinh nghiệm */}
                 <div>
-                  <p className="mb-xs text-body-sm font-black text-ink-primary">Kinh nghiệm</p>
-                  <div className="flex h-12 items-center gap-sm rounded-2xl border border-botanical-border bg-warm-bg px-md text-body-sm font-bold text-ink-primary"><History className="h-5 w-5 text-primary" /> {yearsExperience} năm làm nghề</div>
+                  <label className="mb-xs block text-body-sm font-black text-ink-primary">Kinh nghiệm</label>
+                  {isEditing ? (
+                    <input
+                      type="number"
+                      min={0}
+                      value={editForm.yearsOfExperience}
+                      onChange={(e) => handleFieldChange("yearsOfExperience", parseInt(e.target.value) || 0)}
+                      className="h-12 w-full rounded-2xl border border-botanical-border bg-white px-md text-body-sm font-semibold text-ink-primary outline-none focus:border-primary focus:ring-4 focus:ring-soft-mint"
+                    />
+                  ) : (
+                    <div className="flex h-12 items-center gap-sm rounded-2xl border border-botanical-border bg-warm-bg px-md text-body-sm font-bold text-ink-primary">
+                      <History className="h-5 w-5 text-primary" />
+                      {editForm.yearsOfExperience} năm làm nghề
+                    </div>
+                  )}
                 </div>
+
+                {/* Chuyên môn chính */}
                 <div>
-                  <p className="mb-xs text-body-sm font-black text-ink-primary">Chuyên môn chính</p>
-                  <div className="flex flex-wrap gap-sm">
-                    {specialties.map((item) => <StatusBadge key={item}>{item}</StatusBadge>)}
-                  </div>
+                  <label className="mb-xs block text-body-sm font-black text-ink-primary">Chuyên môn chính</label>
+                  {isEditing ? (
+                    <div className="grid grid-cols-2 gap-2">
+                      {SPECIALTIES.map((specialty) => (
+                        <label
+                          key={specialty}
+                          className={`flex cursor-pointer items-center gap-2 rounded-xl border px-3 py-2 text-sm ${editForm.specialties.includes(specialty) ? "border-primary bg-soft-mint text-primary" : "border-botanical-border bg-background text-on-surface-variant"}`}
+                        >
+                          <input
+                            className="sr-only"
+                            type="checkbox"
+                            checked={editForm.specialties.includes(specialty)}
+                            onChange={() => {
+                              const next = editForm.specialties.includes(specialty)
+                                ? editForm.specialties.filter((s) => s !== specialty)
+                                : [...editForm.specialties, specialty];
+                              handleFieldChange("specialties", next);
+                            }}
+                          />
+                          <span>{specialty}</span>
+                        </label>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="flex flex-wrap gap-sm rounded-2xl border border-botanical-border bg-warm-bg px-md py-sm">
+                      {editForm.specialties.length > 0 ? editForm.specialties.map((item) => <StatusBadge key={item}>{item}</StatusBadge>) : (
+                        <span className="text-body-sm font-semibold text-muted-text">—</span>
+                      )}
+                    </div>
+                  )}
                 </div>
               </div>
-              <TextArea label="Giới thiệu bản thân" value={therapistBio} />
+
+              {/* Giới thiệu bản thân */}
+              <div>
+                <label className="mb-xs block text-body-sm font-black text-ink-primary">Giới thiệu bản thân</label>
+                {isEditing ? (
+                  <textarea
+                    value={editForm.bio}
+                    onChange={(e) => handleFieldChange("bio", e.target.value)}
+                    rows={4}
+                    className="min-h-28 w-full rounded-2xl border border-botanical-border bg-white px-md py-sm text-body-sm font-semibold text-ink-primary outline-none focus:border-primary focus:ring-4 focus:ring-soft-mint"
+                    placeholder="Giới thiệu về bản thân, kinh nghiệm và phong cách làm việc..."
+                  />
+                ) : (
+                  <div className="min-h-28 rounded-2xl border border-botanical-border bg-warm-bg px-md py-sm text-body-sm font-semibold text-ink-primary">
+                    {editForm.bio || "—"}
+                  </div>
+                )}
+              </div>
             </div>
           </section>
 
           <section className="rounded-[2rem] border border-botanical-border bg-white p-lg shadow-stitch-soft">
-            <h2 className="mb-lg inline-flex items-center gap-sm text-xl font-black text-ink-primary"><ShieldCheck className="h-5 w-5 text-primary" /> Chứng chỉ & giấy tờ</h2>
-            <div className="grid gap-md md:grid-cols-2">
+            <div className="mb-lg flex items-center justify-between">
+              <h2 className="inline-flex items-center gap-sm text-xl font-black text-ink-primary"><ShieldCheck className="h-5 w-5 text-primary" /> Giấy tờ xác minh</h2>
+              {hasPendingCredentials && !hasApprovedCredentials && (
+                <StatusBadge tone="amber">Đang chờ duyệt</StatusBadge>
+              )}
+              {hasApprovedCredentials && (
+                <StatusBadge tone="teal">Đã xác minh</StatusBadge>
+              )}
+            </div>
+
+            {hasPendingCredentials && !hasApprovedCredentials && (
+              <div className="mb-md rounded-2xl border border-pending-amber/30 bg-pending-amber/5 p-sm text-center text-body-sm font-semibold text-sage-secondary">
+                Giấy tờ của bạn đang chờ Admin duyệt. Sau khi duyệt, thông tin sẽ hiển thị tại đây.
+              </div>
+            )}
+
+            <div className="grid gap-md md:grid-cols-2 xl:grid-cols-3">
               {/* Citizen ID Front */}
-              <label className={`flex cursor-pointer items-center gap-md rounded-3xl border border-botanical-border bg-warm-bg p-md transition ${uploadingCitizenId === 'front' ? 'opacity-60' : 'hover:bg-soft-mint'}`}>
-                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-soft-mint text-primary">
-                  <IdCard className="h-5 w-5" />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <p className="font-black text-ink-primary">CCCD Mặt trước</p>
-                  <p className="text-label-caption font-semibold text-sage-secondary">
-                    {uploadingCitizenId === 'front' ? 'Đang tải...' : profile?.citizenIdFrontUrl ? 'Đã tải lên' : 'Chưa tải lên'}
-                  </p>
-                </div>
-                <StatusBadge tone={profile?.citizenIdFrontUrl ? "teal" : "slate"}>
-                  {profile?.citizenIdFrontUrl ? "Đã có" : "Chưa có"}
-                </StatusBadge>
-                <input
-                  type="file"
-                  accept="image/jpeg,image/png,image/webp"
-                  onChange={handleCitizenIdFrontUpload}
-                  disabled={uploadingCitizenId !== null}
-                  className="sr-only"
-                />
-              </label>
+              <div className="flex flex-col gap-sm">
+                <label className={`relative block overflow-hidden rounded-3xl border border-botanical-border bg-warm-bg transition ${isEditing ? 'cursor-pointer hover:border-primary' : 'cursor-not-allowed'}`}>
+                  {!isEditing && (
+                    <div className="absolute inset-0 z-10 flex items-center justify-center bg-black/30 opacity-0 hover:opacity-100">
+                      <div className="flex flex-col items-center gap-xs text-white">
+                        <Pencil className="h-5 w-5" />
+                        <span className="text-label-caption font-black">Bấm Chỉnh sửa để tải lên</span>
+                      </div>
+                    </div>
+                  )}
+                  {isEditing && (
+                    <div className="absolute inset-0 z-10 flex items-center justify-center bg-black/30 opacity-0 hover:opacity-100">
+                      <div className="flex flex-col items-center gap-xs text-white">
+                        <Upload className="h-6 w-6" />
+                        <span className="text-label-caption font-black">Tải ảnh lên</span>
+                      </div>
+                    </div>
+                  )}
+                  {displayCitizenFront ? (
+                    <img
+                      src={displayCitizenFront}
+                      alt="CCCD Mặt trước"
+                      className="h-40 w-full object-cover"
+                    />
+                  ) : (
+                    <div className="flex h-40 flex-col items-center justify-center gap-sm bg-surface-container-low">
+                      <IdCard className="h-8 w-8 text-sage-secondary" />
+                      <span className="text-label-caption font-semibold text-sage-secondary">Chưa có ảnh</span>
+                    </div>
+                  )}
+                  <input
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp"
+                    onChange={handleCitizenIdFrontUpload}
+                    disabled={!isEditing || uploadingCitizenId !== null}
+                    className="sr-only"
+                  />
+                </label>
+                <p className="text-center text-body-sm font-black text-ink-primary">CCCD Mặt trước</p>
+                {uploadingCitizenId === 'front' && (
+                  <p className="text-center text-label-caption font-semibold text-primary">Đang tải...</p>
+                )}
+              </div>
 
               {/* Citizen ID Back */}
-              <label className={`flex cursor-pointer items-center gap-md rounded-3xl border border-botanical-border bg-warm-bg p-md transition ${uploadingCitizenId === 'back' ? 'opacity-60' : 'hover:bg-soft-mint'}`}>
-                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-soft-mint text-primary">
-                  <IdCard className="h-5 w-5" />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <p className="font-black text-ink-primary">CCCD Mặt sau</p>
-                  <p className="text-label-caption font-semibold text-sage-secondary">
-                    {uploadingCitizenId === 'back' ? 'Đang tải...' : profile?.citizenIdBackUrl ? 'Đã tải lên' : 'Chưa tải lên'}
-                  </p>
-                </div>
-                <StatusBadge tone={profile?.citizenIdBackUrl ? "teal" : "slate"}>
-                  {profile?.citizenIdBackUrl ? "Đã có" : "Chưa có"}
-                </StatusBadge>
-                <input
-                  type="file"
-                  accept="image/jpeg,image/png,image/webp"
-                  onChange={handleCitizenIdBackUpload}
-                  disabled={uploadingCitizenId !== null}
-                  className="sr-only"
-                />
-              </label>
+              <div className="flex flex-col gap-sm">
+                <label className={`relative block overflow-hidden rounded-3xl border border-botanical-border bg-warm-bg transition ${isEditing ? 'cursor-pointer hover:border-primary' : 'cursor-not-allowed'}`}>
+                  {!isEditing && (
+                    <div className="absolute inset-0 z-10 flex items-center justify-center bg-black/30 opacity-0 hover:opacity-100">
+                      <div className="flex flex-col items-center gap-xs text-white">
+                        <Pencil className="h-5 w-5" />
+                        <span className="text-label-caption font-black">Bấm Chỉnh sửa để tải lên</span>
+                      </div>
+                    </div>
+                  )}
+                  {isEditing && (
+                    <div className="absolute inset-0 z-10 flex items-center justify-center bg-black/30 opacity-0 hover:opacity-100">
+                      <div className="flex flex-col items-center gap-xs text-white">
+                        <Upload className="h-6 w-6" />
+                        <span className="text-label-caption font-black">Tải ảnh lên</span>
+                      </div>
+                    </div>
+                  )}
+                  {displayCitizenBack ? (
+                    <img
+                      src={displayCitizenBack}
+                      alt="CCCD Mặt sau"
+                      className="h-40 w-full object-cover"
+                    />
+                  ) : (
+                    <div className="flex h-40 flex-col items-center justify-center gap-sm bg-surface-container-low">
+                      <IdCard className="h-8 w-8 text-sage-secondary" />
+                      <span className="text-label-caption font-semibold text-sage-secondary">Chưa có ảnh</span>
+                    </div>
+                  )}
+                  <input
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp"
+                    onChange={handleCitizenIdBackUpload}
+                    disabled={!isEditing || uploadingCitizenId !== null}
+                    className="sr-only"
+                  />
+                </label>
+                <p className="text-center text-body-sm font-black text-ink-primary">CCCD Mặt sau</p>
+                {uploadingCitizenId === 'back' && (
+                  <p className="text-center text-label-caption font-semibold text-primary">Đang tải...</p>
+                )}
+              </div>
 
-              {/* Certificates - clickable upload label */}
-              <label className={`flex cursor-pointer items-center gap-md rounded-3xl border border-botanical-border bg-warm-bg p-md transition ${uploadingCertificate ? 'opacity-60' : 'hover:bg-soft-mint'}`}>
-                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-soft-mint text-primary">
-                  <FileText className="h-5 w-5" />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <p className="font-black text-ink-primary">Chứng chỉ hành nghề</p>
-                  <p className="text-label-caption font-semibold text-sage-secondary">
-                    {uploadingCertificate
-                      ? 'Đang tải...'
-                      : certificateUrls.length > 0
-                        ? `${certificateUrls.length} file đã tải lên`
-                        : 'Chưa tải lên'}
-                  </p>
-                </div>
-                <StatusBadge tone={certificateUrls.length > 0 ? "teal" : "slate"}>
-                  {certificateUrls.length > 0 ? "Đã có" : "Chưa có"}
-                </StatusBadge>
-                <input
-                  type="file"
-                  accept="image/jpeg,image/png,image/webp"
-                  multiple
-                  onChange={handleCertificateUpload}
-                  disabled={uploadingCertificate}
-                  className="sr-only"
-                  aria-label="Tải lên chứng chỉ hành nghề"
-                />
-              </label>
+              {/* Certificates */}
+              <div className="flex flex-col gap-sm">
+                <label className={`relative block overflow-hidden rounded-3xl border border-botanical-border bg-warm-bg transition ${isEditing ? 'cursor-pointer hover:border-primary' : 'cursor-not-allowed'}`}>
+                  {!isEditing && (
+                    <div className="absolute inset-0 z-10 flex items-center justify-center bg-black/30 opacity-0 hover:opacity-100">
+                      <div className="flex flex-col items-center gap-xs text-white">
+                        <Pencil className="h-5 w-5" />
+                        <span className="text-label-caption font-black">Bấm Chỉnh sửa để tải lên</span>
+                      </div>
+                    </div>
+                  )}
+                  {isEditing && (
+                    <div className="absolute inset-0 z-10 flex items-center justify-center bg-black/30 opacity-0 hover:opacity-100">
+                      <div className="flex flex-col items-center gap-xs text-white">
+                        <Upload className="h-6 w-6" />
+                        <span className="text-label-caption font-black">Tải ảnh lên</span>
+                      </div>
+                    </div>
+                  )}
+                  {displayCertUrls.length > 0 ? (
+                    <div className="grid grid-cols-2 gap-1">
+                      {displayCertUrls.slice(0, 4).map((url, i) => (
+                        <img key={i} src={url} alt={`Chứng chỉ ${i + 1}`} className="h-20 w-full object-cover" />
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="flex h-40 flex-col items-center justify-center gap-sm bg-surface-container-low">
+                      <FileText className="h-8 w-8 text-sage-secondary" />
+                      <span className="text-label-caption font-semibold text-sage-secondary">Chưa có chứng chỉ</span>
+                    </div>
+                  )}
+                  <input
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp"
+                    multiple
+                    onChange={handleCertificateUpload}
+                    disabled={!isEditing || uploadingCertificate}
+                    className="sr-only"
+                    aria-label="Tải lên chứng chỉ hành nghề"
+                  />
+                </label>
+                <p className="text-center text-body-sm font-black text-ink-primary">Chứng chỉ hành nghề</p>
+                {uploadingCertificate && (
+                  <p className="text-center text-label-caption font-semibold text-primary">Đang tải...</p>
+                )}
+              </div>
             </div>
-            {uploadError && uploadingCertificate === false && (
+            {uploadError && (
               <p className="mt-sm text-xs font-semibold text-red-600">{uploadError}</p>
             )}
           </section>
@@ -985,14 +1314,41 @@ export function TherapistProfilePage() {
           <section className="rounded-[2rem] border border-botanical-border bg-white p-lg shadow-stitch-soft">
             <div className="mb-lg flex items-center justify-between">
               <h2 className="inline-flex items-center gap-sm text-xl font-black text-ink-primary"><MapPin className="h-5 w-5 text-primary" /> Khu vực phục vụ</h2>
-              <button className="text-body-sm font-black text-primary">Chỉnh sửa vùng</button>
             </div>
             <div className="space-y-md">
               <div>
                 <p className="mb-sm text-body-sm font-black text-ink-primary">Các quận hỗ trợ</p>
-                <div className="flex flex-wrap gap-sm">
-                  {serviceAreas.map((area) => <span key={area} className="rounded-full bg-surface-container-low px-md py-xs text-label-caption font-black text-sage-secondary">{area}</span>)}
-                </div>
+                {isEditing ? (
+                  <div className="grid grid-cols-2 gap-2">
+                    {SERVICE_AREAS.map((area) => (
+                      <label
+                        key={area}
+                        className={`flex cursor-pointer items-center gap-2 rounded-xl border px-3 py-2 text-sm ${displayServiceAreas.includes(area) ? "border-primary bg-soft-mint text-primary" : "border-botanical-border bg-background text-on-surface-variant"}`}
+                      >
+                        <input
+                          className="sr-only"
+                          type="checkbox"
+                          checked={displayServiceAreas.includes(area)}
+                          onChange={() => {
+                            const next = displayServiceAreas.includes(area)
+                              ? displayServiceAreas.filter((s) => s !== area)
+                              : [...displayServiceAreas, area];
+                            handleFieldChange("serviceAreas", next);
+                          }}
+                        />
+                        <span>{area}</span>
+                      </label>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="flex flex-wrap gap-sm">
+                    {displayServiceAreas.length > 0 ? displayServiceAreas.map((area) => (
+                      <span key={area} className="rounded-full bg-surface-container-low px-md py-xs text-label-caption font-black text-sage-secondary">{area}</span>
+                    )) : (
+                      <span className="text-body-sm font-semibold text-muted-text">—</span>
+                    )}
+                  </div>
+                )}
               </div>
             </div>
           </section>
@@ -1005,7 +1361,7 @@ export function TherapistProfilePage() {
               <div className="mx-auto mb-md h-24 w-24">
                 <img src={profile?.portraitUrl || profile?.avatarUrl || "/placeholder-avatar.png"} alt="Ảnh xem trước hồ sơ" className="h-24 w-24 rounded-full border-4 border-soft-mint object-cover shadow-lg" />
               </div>
-              <h2 className="text-2xl font-black text-ink-primary">{therapistName}</h2>
+              <h2 className="text-2xl font-black text-ink-primary">{editForm.fullName || "Kỹ thuật viên"}</h2>
               <p className="mt-xs text-body-sm font-bold text-sage-secondary">Chuyên gia massage trị liệu</p>
               <div className="my-md grid grid-cols-2 divide-x divide-botanical-border border-y border-botanical-border py-sm">
                 <div><p className="text-xl font-black text-ink-primary">{rating.toFixed(1)} ★</p><p className="text-label-caption font-black uppercase text-muted-text">Đánh giá</p></div>

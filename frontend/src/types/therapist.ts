@@ -13,7 +13,9 @@ export type Therapist = User & {
   citizenId?: string;
   citizenIdFrontUrl?: string;
   citizenIdBackUrl?: string;
-  bio?: string;
-  isOnline?: boolean;
-  portraitUrl?: string;
+  pendingCitizenId?: string;
+  pendingCitizenIdFrontUrl?: string;
+  pendingCitizenIdBackUrl?: string;
+  pendingCertificateUrls?: string[];
+  serviceAreas?: string[];
 };

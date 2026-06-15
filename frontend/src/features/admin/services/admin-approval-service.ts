@@ -13,6 +13,9 @@ type TherapistApprovalDto = {
   created_at: string;
   status: TherapistApprovalStatus;
   rejection_reason?: string;
+  pending_citizen_id_front_url?: string;
+  pending_citizen_id_back_url?: string;
+  pending_certificate_urls: string[];
 };
 
 function mapTherapistApproval(t: TherapistApprovalDto): TherapistApproval {
@@ -28,6 +31,12 @@ function mapTherapistApproval(t: TherapistApprovalDto): TherapistApproval {
     submittedAt: t.created_at,
     status: t.status as TherapistApprovalStatus,
     rejectionReason: t.rejection_reason || undefined,
+    pendingCitizenIdFrontUrl: t.pending_citizen_id_front_url || undefined,
+    pendingCitizenIdBackUrl: t.pending_citizen_id_back_url || undefined,
+    pendingCertificateUrls: t.pending_certificate_urls ?? [],
+    hasPendingCredentialUpdate: Boolean(
+      t.pending_citizen_id_front_url || t.pending_citizen_id_back_url || (t.pending_certificate_urls?.length ?? 0) > 0,
+    ),
   };
 }
 
@@ -53,5 +62,27 @@ export async function approveTherapistApplication(therapistId: string): Promise<
 
 export async function rejectTherapistApplication(therapistId: string, reason: string): Promise<TherapistApproval> {
   await apiClient.post(`/admin/therapists/${therapistId}/reject/`, { reason });
+  return fetchTherapistApproval(therapistId);
+}
+
+// ── Credential Update (credential_update tab) ──
+
+export async function getCredentialUpdates(status: string = "pending"): Promise<TherapistApproval[]> {
+  const params = new URLSearchParams();
+  if (status && status !== "pending") {
+    params.set("status", status);
+  }
+  const url = `/admin/therapists/credential-updates/${params.toString() ? `?${params}` : ""}`;
+  const res = await apiClient.get<{ results: TherapistApprovalDto[] }>(url);
+  return (res.data.results ?? []).map(mapTherapistApproval);
+}
+
+export async function approveCredentialUpdate(therapistId: string): Promise<TherapistApproval> {
+  await apiClient.post(`/admin/therapists/${therapistId}/approve-credentials/`);
+  return fetchTherapistApproval(therapistId);
+}
+
+export async function rejectCredentialUpdate(therapistId: string): Promise<TherapistApproval> {
+  await apiClient.post(`/admin/therapists/${therapistId}/reject-credentials/`);
   return fetchTherapistApproval(therapistId);
 }

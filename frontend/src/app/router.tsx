@@ -1,4 +1,4 @@
-﻿import { createBrowserRouter } from "react-router-dom";
+import { createBrowserRouter } from "react-router-dom";
 import { AuthLayout } from "@/components/layout/AuthLayout";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { PublicLayout } from "@/components/layout/PublicLayout";
@@ -13,8 +13,11 @@ import { ProfilePage } from "@/features/customer/ProfilePage";
 import {
   AdminBookingsPage,
   AdminHomePage,
+  AdminSpaAddPage,
   AdminSpasPage,
+  AdminSpaDetailPage,
   AdminTherapistApprovalsPage,
+  AdminTherapistProfilePage,
   AdminUsersPage,
 } from "@/features/admin/pages/AdminPages";
 import { AdminLoginPage } from "@/features/admin/pages/AdminLoginPage";
@@ -157,6 +160,8 @@ export const router = createBrowserRouter([
       { path: "/admin/therapist-approvals", element: <AdminTherapistApprovalsPage /> },
       { path: "/admin/bookings", element: <AdminBookingsPage /> },
       { path: "/admin/spas", element: <AdminSpasPage /> },
+      { path: "/admin/spas/new", element: <AdminSpaAddPage /> },
+      { path: "/admin/spas/:spaId", element: <AdminSpaDetailPage /> },
     ],
   },
   { path: "*", element: <NotFoundPage /> },

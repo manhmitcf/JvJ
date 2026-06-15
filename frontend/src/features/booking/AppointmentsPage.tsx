@@ -449,6 +449,14 @@ function AppointmentCard({ booking, reviewsByBookingId, onCancel }: { booking: B
               Hủy lịch
             </button>
           ) : null}
+          <button
+            onClick={() => {
+              import("@/features/conversation/components/ChatPanel").then(m => m.openChatWithTherapist(booking.therapistId));
+            }}
+            className="rounded-xl border border-[#005c55]/20 bg-[#E6F4F1] px-5 py-2.5 text-sm font-semibold text-[#005c55] transition-all hover:bg-[#d9efe9]"
+          >
+            Nhắn tin
+          </button>
           <button onClick={() => navigate(`/app/appointments/${booking.id}`)} className="rounded-xl border border-[#bdc9c6] px-5 py-2.5 text-sm font-medium text-[#3e4947] transition-all hover:bg-[#ebefed]">
             Xem chi tiết
           </button>

@@ -1,6 +1,6 @@
 import { create } from "zustand";
 import { type Spa, type SpaFormInput } from "@/types/spa";
-import { createSpa, deleteSpa, getAdminSpas, updateSpa, type AdminSpaFilters } from "../services/admin-spa-service";
+import { createSpa, deleteSpa, getAdminSpas, updateSpa as updateSpaService, type AdminSpaFilters } from "../services/admin-spa-service";
 
 type AdminSpaStore = {
   spas: Spa[];
@@ -43,22 +43,26 @@ export const useAdminSpaStore = create<AdminSpaStore>((set) => ({
     try {
       const spa = await createSpa(data);
       set((state) => ({ spas: [...state.spas, spa], selectedSpa: spa, isLoading: false }));
+      return spa;
     } catch (error) {
       set({ error: (error as Error).message, isLoading: false });
+      throw error;
     }
   },
 
   updateSpa: async (spaId, updates) => {
     set({ isLoading: true, error: null });
     try {
-      const spa = await updateSpa(spaId, updates);
+      const spa = await updateSpaService(spaId, updates);
       set((state) => ({
         spas: state.spas.map((item) => (item.id === spaId ? spa : item)),
         selectedSpa: state.selectedSpa?.id === spaId ? spa : state.selectedSpa,
         isLoading: false,
       }));
+      return spa;
     } catch (error) {
       set({ error: (error as Error).message, isLoading: false });
+      throw error;
     }
   },
 

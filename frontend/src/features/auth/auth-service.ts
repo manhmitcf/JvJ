@@ -17,6 +17,7 @@ type BackendAuthUser = {
   rating?: number | null;
   completed_bookings?: number | null;
   certificate_urls?: string[];
+  portrait_url?: string | null;
 };
 
 type BackendAuthResponse = {
@@ -66,13 +67,16 @@ type RegisterAdminRequest = {
 };
 
 function mapAuthUser(user: BackendAuthUser): AuthUser {
+  const avatarUrl =
+    user.avatar_url || undefined;
+
   const baseUser: User = {
     id: user.id,
     role: user.role,
     fullName: user.full_name,
     email: user.email,
     phone: user.phone,
-    avatarUrl: user.avatar_url || undefined,
+    avatarUrl,
   };
 
   if (user.role !== "therapist") {
@@ -88,6 +92,8 @@ function mapAuthUser(user: BackendAuthUser): AuthUser {
     rating: user.rating ?? 0,
     completedBookings: user.completed_bookings ?? 0,
     certificateUrls: user.certificate_urls ?? [],
+    // For therapists, portrait_url from TherapistProfile serves as avatar
+    avatarUrl: avatarUrl || user.portrait_url,
   };
 }
 

@@ -4,7 +4,7 @@ import { useAdminApprovalStore } from "./admin-approval-store";
 
 describe("admin approval store", () => {
   beforeEach(() => {
-    useAdminApprovalStore.setState({ approvals: [], selectedApproval: null, isLoading: false, error: null });
+    useAdminApprovalStore.setState({ approvals: [], selectedApproval: null, isLoading: false, error: null, credentialUpdates: [], selectedCredentialUpdate: null });
   });
 
   it("fetches approvals", async () => {

@@ -1,7 +1,7 @@
 import { type ReactNode } from "react";
 import { Search } from "lucide-react";
 
-export function AdminStatusBadge({ children, tone = "slate" }: { children: ReactNode; tone?: "teal" | "amber" | "red" | "slate" | "green" | "blue" }) {
+export function AdminStatusBadge({ children, tone = "slate", className = "" }: { children: ReactNode; tone?: "teal" | "amber" | "red" | "slate" | "green" | "blue"; className?: string }) {
   const tones = {
     teal: "bg-primary/10 text-primary",
     amber: "bg-[#FEF3C7] text-[#A16207]",
@@ -11,12 +11,12 @@ export function AdminStatusBadge({ children, tone = "slate" }: { children: React
     blue: "bg-[#DBEAFE] text-[#2563EB]",
   };
 
-  return <span className={`inline-flex rounded-full px-sm py-1 text-xs font-black ${tones[tone]}`}>{children}</span>;
+  return <span className={`inline-flex rounded-full px-sm py-1 text-xs font-black ${tones[tone]} ${className}`}>{children}</span>;
 }
 
-export function AdminPrimaryButton({ children, onClick, type = "button" }: { children: ReactNode; onClick?: () => void; type?: "button" | "submit" }) {
+export function AdminPrimaryButton({ children, onClick, type = "button", className = "" }: { children: ReactNode; onClick?: () => void; type?: "button" | "submit"; className?: string }) {
   return (
-    <button type={type} onClick={onClick} className="inline-flex items-center justify-center gap-xs rounded-2xl bg-primary px-md py-sm text-body-sm font-black text-white shadow-stitch-soft transition-colors hover:bg-[#115E59]">
+    <button type={type} onClick={onClick} className={`inline-flex items-center justify-center gap-xs rounded-2xl bg-primary px-md py-sm text-body-sm font-black text-white shadow-stitch-soft transition-colors hover:bg-[#115E59] ${className}`}>
       {children}
     </button>
   );

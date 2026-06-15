@@ -17,6 +17,7 @@ export async function getAdminOverview(): Promise<AdminOverview> {
       activeTherapists: d.active_therapists as number,
       newBookingsToday: d.new_bookings_today as number,
       pendingTherapistApprovals: d.pending_therapist_approvals as number,
+      pendingCredentialUpdates: (d.pending_credential_updates as number) ?? 0,
       totalRevenueMonth: d.total_revenue_month as number,
       completedBookingsMonth: d.completed_bookings_month as number,
     },
