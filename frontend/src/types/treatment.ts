@@ -1,22 +1,22 @@
 export type TreatmentCategory =
-  | "neck_shoulder"
-  | "physical_therapy"
-  | "recovery"
-  | "acupressure"
-  | "traditional_medicine";
+  | "Cổ vai gáy"
+  | "Vật lý trị liệu"
+  | "Phục hồi chức năng"
+  | "Ấn huyệt"
+  | "Đông y";
 
 export type Treatment = {
   id: string;
   therapistId: string;
-  therapistName?: string; // Có trong API response, optional vì không phải lúc nào cũng cần
+  therapistName?: string;
   name: string;
   category: TreatmentCategory;
   description: string;
   price: number;
   durationMinutes: number;
   rating: number;
-  reviewCount?: number; // Có trong API response
-  images: string[]; // Array of image URLs, max 5
-  imageUrl: string; // First image for backward compatibility
+  reviewCount?: number;
+  images: string[];
+  imageUrl: string;
   isAvailable: boolean;
 };

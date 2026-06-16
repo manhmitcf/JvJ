@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import {
   AlertCircle,
@@ -62,6 +62,9 @@ export function BookingWizardPage() {
     selectedTreatment,
     selectedTherapist,
     treatments,
+    treatmentPage,
+    treatmentPageCount,
+    treatmentTotalCount,
     therapists,
     selectedDate,
     selectedTimeSlot,
@@ -88,11 +91,14 @@ export function BookingWizardPage() {
     createBooking,
   } = useBookingWizardStore();
 
+  const [treatmentSearch, setTreatmentSearch] = useState("");
+  const searchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   const { spas, loadSpas } = useSpaStore();
   const selectedSpa = useMemo(() => spas.find((spa) => spa.id === spaId && spa.status === "active") ?? null, [spas, spaId]);
 
   useEffect(() => {
-    void loadTreatments();
+    void loadTreatments({ page: 1 });
     void loadTherapists();
     void loadSpas();
   }, [loadTreatments, loadTherapists, loadSpas]);
@@ -154,12 +160,24 @@ export function BookingWizardPage() {
           {currentStep === 1 ? (
             <TreatmentStep
               treatments={treatments}
+              treatmentPage={treatmentPage}
+              treatmentPageCount={treatmentPageCount}
+              treatmentTotalCount={treatmentTotalCount}
+              treatmentSearch={treatmentSearch}
               therapists={therapists}
               selectedTreatment={selectedTreatment}
               selectedTherapist={selectedTherapist}
               isLoading={isLoadingTreatments || isLoadingTherapists}
               onSelectTreatment={selectTreatment}
               onSelectTherapist={selectTherapist}
+              onSearchChange={(q) => {
+                setTreatmentSearch(q);
+                if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current);
+                searchTimeoutRef.current = setTimeout(() => {
+                  void loadTreatments({ page: 1, search: q });
+                }, 350);
+              }}
+              onPageChange={(page) => void loadTreatments({ page })}
               onNext={() => setCurrentStep(2)}
             />
           ) : null}
@@ -299,21 +317,33 @@ function Stepper({
 
 function TreatmentStep({
   treatments,
+  treatmentPage,
+  treatmentPageCount,
+  treatmentTotalCount,
+  treatmentSearch,
   therapists,
   selectedTreatment,
   selectedTherapist,
   isLoading,
   onSelectTreatment,
   onSelectTherapist,
+  onSearchChange,
+  onPageChange,
   onNext,
 }: {
   treatments: Treatment[];
+  treatmentPage: number;
+  treatmentPageCount: number;
+  treatmentTotalCount: number;
+  treatmentSearch: string;
   therapists: Therapist[];
   selectedTreatment: Treatment | null;
   selectedTherapist: Therapist | null;
   isLoading: boolean;
   onSelectTreatment: (treatment: Treatment) => void;
   onSelectTherapist: (therapist: Therapist) => void;
+  onSearchChange: (query: string) => void;
+  onPageChange: (page: number) => void;
   onNext: () => void;
 }) {
   if (isLoading) {
@@ -331,9 +361,23 @@ function TreatmentStep({
       description="Chọn liệu trình và kỹ thuật viên phù hợp với nhu cầu của bạn."
     >
       {/* Danh sách treatments */}
-      {treatments.length > 1 && (
-        <div>
-          <h3 className="mb-md text-sm font-black text-ink-primary">Chọn liệu trình</h3>
+      <div>
+        <h3 className="mb-md text-sm font-black text-ink-primary">Chọn liệu trình</h3>
+        <div className="mb-md flex items-center gap-md">
+          <Input
+            value={treatmentSearch}
+            onChange={(e) => onSearchChange(e.target.value)}
+            placeholder="Tìm kiếm liệu trình..."
+            className="h-10 max-w-sm rounded-xl"
+          />
+          <span className="text-label-caption text-sage-secondary">{treatmentTotalCount} liệu trình</span>
+        </div>
+        {treatments.length === 0 && !isLoading && (
+          <div className="rounded-2xl border border-botanical-border bg-white p-lg text-center text-body-sm text-sage-secondary">
+            Không tìm thấy liệu trình nào phù hợp.
+          </div>
+        )}
+        {treatments.length > 0 && (
           <div className="grid gap-md sm:grid-cols-2">
             {treatments.map((treatment) => (
               <button
@@ -358,10 +402,11 @@ function TreatmentStep({
                   <div className="flex-1">
                     <h4 className="font-black text-ink-primary">{treatment.name}</h4>
                     <p className="mt-xs text-body-sm text-sage-secondary line-clamp-2">{treatment.description}</p>
-                    <div className="mt-sm flex items-center gap-md text-label-caption text-on-surface-variant">
-                      <span>{treatment.durationMinutes} phút</span>
-                      <span>•</span>
-                      <span className="font-semibold text-primary">{Number(treatment.price).toLocaleString("vi-VN")}đ</span>
+                    <div className="mt-sm flex flex-wrap items-center gap-md text-label-caption text-on-surface-variant">
+                      <Badge className="border-0 bg-gentle-wash text-sage-secondary">{treatment.category}</Badge>
+                      <span>{treatment.durationMinutes} phut</span>
+                      <span>*</span>
+                      <span className="font-semibold text-primary">{Number(treatment.price).toLocaleString("vi-VN")}d</span>
                     </div>
                   </div>
                   {selectedTreatment?.id === treatment.id && (
@@ -371,8 +416,33 @@ function TreatmentStep({
               </button>
             ))}
           </div>
-        </div>
-      )}
+        )}
+        {treatmentPageCount > 1 && (
+          <div className="mt-lg flex items-center justify-center gap-sm">
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={() => onPageChange(treatmentPage - 1)}
+              disabled={treatmentPage <= 1}
+              className="h-8 rounded-lg px-md text-sm"
+            >
+              Prev
+            </Button>
+            <span className="text-label-caption text-sage-secondary">
+              Trang {treatmentPage} / {treatmentPageCount}
+            </span>
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={() => onPageChange(treatmentPage + 1)}
+              disabled={treatmentPage >= treatmentPageCount}
+              className="h-8 rounded-lg px-md text-sm"
+            >
+              Next
+            </Button>
+          </div>
+        )}
+      </div>
 
       {/* Chi tiết treatment đã chọn */}
       <div className="grid gap-lg xl:grid-cols-[1.05fr_0.95fr]">
@@ -761,7 +831,7 @@ function ConfirmStep({
             variant="secondary"
             onClick={() => {
               void useBookingWizardStore.getState().reset();
-              void useBookingWizardStore.getState().loadTreatments();
+              void useBookingWizardStore.getState().loadTreatments({ page: 1 });
               void useBookingWizardStore.getState().loadTherapists();
             }}
             className="flex-1 rounded-xl"

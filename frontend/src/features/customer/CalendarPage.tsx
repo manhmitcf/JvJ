@@ -11,19 +11,18 @@ import { type CalendarBookingDisplay } from "@/features/customer/components/Cale
 import { bookingService } from "@/services/booking-service";
 import { type BookingWithDisplay } from "@/services/mappers/booking-mapper";
 
-const defaultWeekStart = "2026-06-01";
 const dayLabels = ["CN", "T2", "T3", "T4", "T5", "T6", "T7"];
-
-function parseLocalDate(isoDate: string) {
-  const [year, month, day] = isoDate.split("-").map(Number);
-  return new Date(year, month - 1, day);
-}
 
 function toIsoDate(date: Date) {
   const year = date.getFullYear();
   const month = String(date.getMonth() + 1).padStart(2, "0");
   const day = String(date.getDate()).padStart(2, "0");
   return `${year}-${month}-${day}`;
+}
+
+function parseLocalDate(isoDate: string) {
+  const [year, month, day] = isoDate.split("-").map(Number);
+  return new Date(year, month - 1, day);
 }
 
 function formatShortDate(isoDate: string) {
@@ -36,26 +35,68 @@ function formatFullDate(isoDate: string) {
   return date.toLocaleDateString("vi-VN", { day: "2-digit", month: "2-digit", year: "numeric" });
 }
 
-function addDays(isoDate: string, days: number) {
-  const nextDate = parseLocalDate(isoDate);
-  nextDate.setDate(nextDate.getDate() + days);
-  return toIsoDate(nextDate);
+function formatMonthYear(date: Date) {
+  return date.toLocaleDateString("vi-VN", { month: "long", year: "numeric" });
 }
 
-function addWeeks(isoDate: string, weeks: number) {
-  return addDays(isoDate, weeks * 7);
+function getMonthLabel(monthStr: string) {
+  const [year, month] = monthStr.split("-").map(Number);
+  return formatMonthYear(new Date(year, month - 1));
 }
 
-function buildCalendarDays(weekStart: string): CalendarDay[] {
-  return Array.from({ length: 7 }, (_, index) => {
-    const isoDate = addDays(weekStart, index);
-    const date = parseLocalDate(isoDate);
-    return {
-      isoDate,
+function getDaysInMonth(year: number, month: number) {
+  return new Date(year, month, 0).getDate();
+}
+
+function getFirstDayOfMonth(year: number, month: number) {
+  return new Date(year, month - 1, 1).getDay();
+}
+
+function buildMonthDays(year: number, month: number): CalendarDay[] {
+  const daysInMonth = getDaysInMonth(year, month);
+  const firstDayOfWeek = getFirstDayOfMonth(year, month);
+
+  const days: CalendarDay[] = [];
+
+  // Fill leading empty days (from previous month)
+  for (let i = 0; i < firstDayOfWeek; i++) {
+    const date = new Date(year, month - 1, -firstDayOfWeek + i + 1);
+    days.push({
+      isoDate: toIsoDate(date),
       shortLabel: dayLabels[date.getDay()],
-      fullLabel: formatShortDate(isoDate),
-    };
-  });
+      fullLabel: formatShortDate(toIsoDate(date)),
+    });
+  }
+
+  // Fill current month days
+  for (let day = 1; day <= daysInMonth; day++) {
+    const date = new Date(year, month - 1, day);
+    days.push({
+      isoDate: toIsoDate(date),
+      shortLabel: dayLabels[date.getDay()],
+      fullLabel: formatShortDate(toIsoDate(date)),
+    });
+  }
+
+  // Fill trailing empty days to complete the grid (multiple of 7)
+  while (days.length % 7 !== 0) {
+    const date = new Date(year, month, days.length - firstDayOfWeek - daysInMonth + 1);
+    days.push({
+      isoDate: toIsoDate(date),
+      shortLabel: dayLabels[date.getDay()],
+      fullLabel: formatShortDate(toIsoDate(date)),
+    });
+  }
+
+  return days;
+}
+
+function addMonths(monthStr: string, offset: number) {
+  const [year, month] = monthStr.split("-").map(Number);
+  const date = new Date(year, month - 1 + offset, 1);
+  const y = date.getFullYear();
+  const m = date.getMonth() + 1;
+  return `${y}-${String(m).padStart(2, "0")}`;
 }
 
 function buildBookingDisplay(booking: BookingWithDisplay): CalendarBookingDisplay {
@@ -71,11 +112,15 @@ function formatDateLabel(date: string) {
   return formatFullDate(date);
 }
 
+function getCurrentMonthStr() {
+  const now = new Date();
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+}
+
 export function CalendarPage() {
   const navigate = useNavigate();
   const authUser = useAuthStore((state) => state.user);
 
-  // Redirect if not authenticated as customer
   useEffect(() => {
     if (!authUser || authUser.role !== "customer") {
       navigate("/auth/login");
@@ -83,12 +128,13 @@ export function CalendarPage() {
   }, [authUser, navigate]);
 
   const [bookings, setBookings] = useState<BookingWithDisplay[]>([]);
-  const [currentWeekStart, setCurrentWeekStart] = useState<string>(defaultWeekStart);
+  const [currentMonth, setCurrentMonth] = useState<string>(getCurrentMonthStr());
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const calendarDays = useMemo(() => buildCalendarDays(currentWeekStart), [currentWeekStart]);
-  const weekEnd = useMemo(() => addDays(currentWeekStart, 6), [currentWeekStart]);
-  const weekRangeLabel = `${formatShortDate(currentWeekStart)} - ${formatFullDate(weekEnd)}`;
+
+  const [year, month] = useMemo(() => currentMonth.split("-").map(Number) as [number, number], [currentMonth]);
+  const calendarDays = useMemo(() => buildMonthDays(year, month), [year, month]);
+  const monthLabel = useMemo(() => getMonthLabel(currentMonth), [currentMonth]);
 
   useEffect(() => {
     if (authUser?.id) {
@@ -104,7 +150,6 @@ export function CalendarPage() {
 
     try {
       const data = await bookingService.listBookingsByCustomer(authUser.id);
-      // Filter out bookings without valid slot data
       setBookings(data.filter((booking) => booking.slotDate));
     } catch (nextError) {
       setError((nextError as Error).message);
@@ -129,14 +174,14 @@ export function CalendarPage() {
     }, {});
   }, [bookings]);
 
-  const visibleWeekBookings = useMemo(() => {
+  const visibleMonthBookings = useMemo(() => {
     const visibleDates = new Set(calendarDays.map((day) => day.isoDate));
     return bookings.filter((booking) => visibleDates.has(booking.slotDate));
   }, [bookings, calendarDays]);
 
-  const upcomingCount = visibleWeekBookings.filter((booking) => booking.status === "pending" || booking.status === "confirmed").length;
-  const completedCount = visibleWeekBookings.filter((booking) => booking.status === "completed").length;
-  const unpaidCount = visibleWeekBookings.filter((booking) => booking.paymentStatus !== "paid").length;
+  const upcomingCount = visibleMonthBookings.filter((booking) => booking.status === "pending" || booking.status === "confirmed").length;
+  const completedCount = visibleMonthBookings.filter((booking) => booking.status === "completed").length;
+  const unpaidCount = visibleMonthBookings.filter((booking) => booking.paymentStatus !== "paid").length;
 
   return (
     <StitchContainer className="py-xl pb-section-gap">
@@ -144,13 +189,13 @@ export function CalendarPage() {
         <div className="flex flex-col gap-lg xl:flex-row xl:items-end xl:justify-between">
           <div className="max-w-3xl space-y-sm">
             <StitchEyebrow>Lịch chăm sóc khách hàng</StitchEyebrow>
-            <h1 className="text-3xl font-black leading-tight text-ink-primary md:text-4xl">Lịch tuần {weekRangeLabel}</h1>
+            <h1 className="text-3xl font-black leading-tight text-ink-primary md:text-4xl">Lịch tháng {monthLabel}</h1>
             <p className="text-body text-sage-secondary">
               Theo dõi lịch hẹn của bạn, quét nhanh ngày có lịch và mở chi tiết booking chỉ với một cú nhấn.
             </p>
           </div>
           <div className="grid gap-md sm:grid-cols-3 xl:min-w-[420px]">
-            <StatCard label="Tổng lịch" value={String(visibleWeekBookings.length)} helper="trong tuần" />
+            <StatCard label="Tổng lịch" value={String(visibleMonthBookings.length)} helper="trong tháng" />
             <StatCard label="Sắp tới" value={String(upcomingCount)} helper="cần theo dõi" />
             <StatCard label="Đã xong" value={String(completedCount)} helper="hoàn tất" />
           </div>
@@ -161,33 +206,74 @@ export function CalendarPage() {
         <div className="flex flex-col gap-md lg:flex-row lg:items-center lg:justify-between">
           <div className="inline-flex items-center gap-sm text-body-sm font-semibold text-sage-secondary">
             <CalendarClock className="h-5 w-5 text-primary" />
-            Đang xem tuần <span className="text-ink-primary">{weekRangeLabel}</span>
+            Đang xem tháng <span className="text-ink-primary">{monthLabel}</span>
           </div>
           <div className="flex w-fit items-center gap-sm rounded-full border border-botanical-border bg-surface px-sm py-xs text-body-sm text-sage-secondary">
-            <button type="button" onClick={() => setCurrentWeekStart((date) => addWeeks(date, -1))} className="rounded-full p-sm transition-colors hover:bg-soft-mint hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2" aria-label="Xem tuần trước">
+            <button
+              type="button"
+              onClick={() => setCurrentMonth((m) => addMonths(m, -1))}
+              className="rounded-full p-sm transition-colors hover:bg-soft-mint hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+              aria-label="Xem tháng trước"
+            >
               <ChevronLeft className="h-4 w-4" />
             </button>
-            <button type="button" onClick={() => setCurrentWeekStart(defaultWeekStart)} className="rounded-full px-md py-sm font-semibold transition-colors hover:bg-soft-mint hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2">
-              Tuần gốc
+            <button
+              type="button"
+              onClick={() => setCurrentMonth(getCurrentMonthStr())}
+              className="rounded-full px-md py-sm font-semibold transition-colors hover:bg-soft-mint hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+            >
+              Hiện tại
             </button>
-            <button type="button" onClick={() => setCurrentWeekStart((date) => addWeeks(date, 1))} className="rounded-full p-sm transition-colors hover:bg-soft-mint hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2" aria-label="Xem tuần sau">
+            <button
+              type="button"
+              onClick={() => setCurrentMonth((m) => addMonths(m, 1))}
+              className="rounded-full p-sm transition-colors hover:bg-soft-mint hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+              aria-label="Xem tháng sau"
+            >
               <ChevronRight className="h-4 w-4" />
             </button>
           </div>
         </div>
 
-        <div className="mt-lg grid gap-sm sm:grid-cols-2 lg:grid-cols-4 2xl:grid-cols-7">
+        {/* Day-of-week header */}
+        <div className="mt-md grid grid-cols-7 gap-sm">
+          {dayLabels.map((label) => (
+            <div key={label} className="rounded-xl bg-surface-container-low py-sm text-center text-label-caption font-black uppercase tracking-widest text-sage-secondary">
+              {label}
+            </div>
+          ))}
+        </div>
+
+        {/* Month grid */}
+        <div className="mt-sm grid grid-cols-7 gap-sm">
           {calendarDays.map((day) => {
             const count = bookingsByDay[day.isoDate]?.length ?? 0;
             const hasBookings = count > 0;
+            const isCurrentMonth = (() => {
+              const d = parseLocalDate(day.isoDate);
+              return d.getFullYear() === year && d.getMonth() + 1 === month;
+            })();
+
             return (
-              <div key={day.isoDate} className={`rounded-2xl border px-md py-sm ${hasBookings ? "border-primary bg-soft-mint text-primary" : "border-botanical-border bg-surface text-sage-secondary"}`}>
-                <div className="flex items-center justify-between gap-sm">
-                  <span className="text-label-caption font-black uppercase tracking-[0.16em]">{day.shortLabel}</span>
-                  <span className="rounded-full bg-white/80 px-sm py-0.5 text-[11px] font-bold">{count} lịch</span>
+              <div
+                key={day.isoDate}
+                className={`min-h-16 rounded-2xl border px-md py-sm ${hasBookings ? "border-primary bg-soft-mint" : "border-botanical-border bg-surface"} ${!isCurrentMonth ? "opacity-40" : ""}`}
+              >
+                <div className="flex items-center justify-between">
+                  <span className={`rounded-full px-sm py-0.5 text-xs font-black ${hasBookings ? "bg-primary text-on-primary" : "bg-surface-container-low text-sage-secondary"}`}>
+                    {day.fullLabel.split("/")[0]}
+                  </span>
+                  {hasBookings && (
+                    <span className="rounded-full bg-white/80 px-sm py-0.5 text-[10px] font-bold text-primary">
+                      {count}
+                    </span>
+                  )}
                 </div>
-                <div className="mt-xs text-lg font-black text-ink-primary">{day.fullLabel}</div>
-                <div className="mt-xs text-label-caption font-semibold">{hasBookings ? "Có lịch cần xem" : "Trống"}</div>
+                {hasBookings && (
+                  <div className="mt-xs text-label-caption font-semibold text-primary">
+                    {count} lịch
+                  </div>
+                )}
               </div>
             );
           })}
@@ -198,10 +284,10 @@ export function CalendarPage() {
         <LoadingSkeleton variant="card" count={3} />
       ) : error ? (
         <ErrorState message={error} onRetry={() => void loadBookings()} />
-      ) : bookings.length === 0 ? (
+      ) : visibleMonthBookings.length === 0 ? (
         <EmptyState
-          title="Tuần này chưa có lịch hẹn"
-          description="Anh Mạnh có thể đặt lịch mới để bắt đầu kế hoạch chăm sóc trong tuần nhé."
+          title="Tháng này chưa có lịch hẹn"
+          description="Anh Mạnh có thể đặt lịch mới để bắt đầu kế hoạch chăm sóc trong tháng nhé."
           action={<StitchButtonLink to="/app/bookings/new">Đặt lịch ngay</StitchButtonLink>}
         />
       ) : (
@@ -209,7 +295,7 @@ export function CalendarPage() {
           <CalendarWeekView days={calendarDays} bookingsByDay={bookingsByDay} displayByBookingId={displayByBookingId} onSelectBooking={(bookingId) => navigate(`/app/appointments/${bookingId}`)} />
 
           <aside className="space-y-lg xl:sticky xl:top-24 xl:self-start">
-            <SummaryPanel total={visibleWeekBookings.length} upcoming={upcomingCount} completed={completedCount} unpaid={unpaidCount} />
+            <SummaryPanel total={visibleMonthBookings.length} upcoming={upcomingCount} completed={completedCount} unpaid={unpaidCount} />
             <QuickActions />
           </aside>
         </section>
@@ -233,10 +319,10 @@ function SummaryPanel({ total, upcoming, completed, unpaid }: { total: number; u
     <div className="rounded-2xl border border-botanical-border bg-surface-container-lowest p-lg shadow-stitch-soft">
       <div className="mb-md flex items-center gap-sm">
         <ClipboardList className="h-5 w-5 text-primary" />
-        <h2 className="text-h3 font-h3 text-ink-primary">Tóm tắt tuần</h2>
+        <h2 className="text-h3 font-h3 text-ink-primary">Tóm tắt tháng</h2>
       </div>
       <div className="space-y-sm text-body-sm">
-        <SummaryRow label="Tổng lịch trong tuần" value={`${total} lịch`} />
+        <SummaryRow label="Tổng lịch trong tháng" value={`${total} lịch`} />
         <SummaryRow label="Cần theo dõi" value={`${upcoming} lịch`} />
         <SummaryRow label="Đã hoàn tất" value={`${completed} lịch`} />
         <SummaryRow label="Chưa thanh toán" value={`${unpaid} lịch`} accent={unpaid > 0} />

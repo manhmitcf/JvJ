@@ -30,8 +30,8 @@ export function SlotFormDialog({ image, slots, onCreate, onDelete, onToggleAvail
   const [isOpen, setIsOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [selectedDate, setSelectedDate] = useState("");
-  const [startTime, setStartTime] = useState("08:00");
-  const [endTime, setEndTime] = useState("09:00");
+  const [startTime, setStartTime] = useState("");
+  const [endTime, setEndTime] = useState("");
   const [error, setError] = useState("");
 
   const validate = (): string | null => {
@@ -56,8 +56,8 @@ export function SlotFormDialog({ image, slots, onCreate, onDelete, onToggleAvail
       await onCreate({ date: selectedDate, startTime, endTime });
       setIsOpen(false);
       setSelectedDate("");
-      setStartTime("08:00");
-      setEndTime("09:00");
+      setStartTime("");
+      setEndTime("");
       onSuccess?.();
     } catch (err) {
       setError((err as Error).message || "Đã xảy ra lỗi khi tạo khung giờ");
@@ -101,20 +101,20 @@ export function SlotFormDialog({ image, slots, onCreate, onDelete, onToggleAvail
                 label="Ngày (YYYY-MM-DD)"
                 value={selectedDate}
                 onChange={(e) => setSelectedDate(e.target.value)}
-                placeholder="2026-06-10"
+                placeholder="YYYY-MM-DD"
               />
               <div className="grid grid-cols-2 gap-sm">
                 <TextField
                   label="Bắt đầu (HH:MM)"
                   value={startTime}
                   onChange={(e) => setStartTime(e.target.value)}
-                  placeholder="08:00"
+                  placeholder="HH:MM"
                 />
                 <TextField
                   label="Kết thúc (HH:MM)"
                   value={endTime}
                   onChange={(e) => setEndTime(e.target.value)}
-                  placeholder="09:00"
+                  placeholder="HH:MM"
                 />
               </div>
             </div>

@@ -20,6 +20,7 @@ export function mapTherapist(dto: TherapistDto): Therapist {
     completedBookings: dto.completed_bookings,
     status: dto.status as "pending_approval" | "approved" | "rejected" | "suspended",
     certificateUrls: dto.certificate_urls,
+    bio: dto.bio,
     isOnline: dto.is_online,
   };
 }

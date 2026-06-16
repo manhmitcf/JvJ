@@ -35,3 +35,19 @@ export type ReviewDto = {
   is_visible: boolean;
   created_at: string;
 };
+
+export type TreatmentDto = {
+  id: string;
+  therapist_id: string;
+  therapist_name: string;
+  name: string;
+  category: string;
+  description: string;
+  price: string;
+  duration_minutes: number;
+  rating: string;
+  review_count: number;
+  images: string[];
+  image_url: string;
+  is_available: boolean;
+};

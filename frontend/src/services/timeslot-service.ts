@@ -26,22 +26,31 @@ function mapTimeSlot(dto: TimeSlotDto): TimeSlot {
 }
 
 export const timeslotService = {
-  async listAvailableTimeSlots(filters?: {
+  async listTimeSlots(filters?: {
     therapistId?: string;
     treatmentId?: string;
     date?: string;
+    status?: string;
   }): Promise<TimeSlot[]> {
     const params = new URLSearchParams();
     if (filters?.therapistId) params.append("therapist", filters.therapistId);
     if (filters?.treatmentId) params.append("treatment", filters.treatmentId);
     if (filters?.date) params.append("date", filters.date);
-    params.append("status", "available");
+    if (filters?.status) params.append("status", filters.status);
 
     const url = `/timeslots/?${params.toString()}`;
 
     const response = await apiClient.get<PaginatedData<TimeSlotDto>>(url);
 
     return response.data.results.map(mapTimeSlot);
+  },
+
+  async listAvailableTimeSlots(filters?: {
+    therapistId?: string;
+    treatmentId?: string;
+    date?: string;
+  }): Promise<TimeSlot[]> {
+    return this.listTimeSlots({ ...filters, status: "available" });
   },
 
   async getTimeSlot(id: string): Promise<TimeSlot | null> {

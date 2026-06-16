@@ -11,11 +11,11 @@ class Treatment(models.Model):
     """Dịch vụ điều trị/massage do therapist cung cấp."""
 
     CATEGORY_CHOICES = [
-        ("neck_shoulder", "Cổ vai gáy"),
-        ("physical_therapy", "Vật lý trị liệu"),
-        ("recovery", "Phục hồi chức năng"),
-        ("acupressure", "Ấn huyệt"),
-        ("traditional_medicine", "Đông y"),
+        ("Cổ vai gáy", "Cổ vai gáy"),
+        ("Vật lý trị liệu", "Vật lý trị liệu"),
+        ("Phục hồi chức năng", "Phục hồi chức năng"),
+        ("Ấn huyệt", "Ấn huyệt"),
+        ("Đông y", "Đông y"),
     ]
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)

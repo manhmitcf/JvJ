@@ -63,7 +63,7 @@ export function HomePage() {
     return <ErrorState message="Không thể tải dữ liệu trang chủ lúc này. Anh Mạnh thử lại giúp em nhé." />;
   }
 
-  const featuredTreatments = (treatmentsQuery.data ?? []).slice(0, 3);
+  const featuredTreatments = (treatmentsQuery.data?.treatments ?? []).slice(0, 3);
 
   return (
     <div className="pb-20">

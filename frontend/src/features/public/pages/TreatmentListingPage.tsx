@@ -107,7 +107,7 @@ export function TreatmentListingPage() {
 
   const filteredTreatments = useMemo(() => {
     const keyword = search.trim().toLowerCase();
-    const next = (treatmentsQuery.data ?? [])
+    const next = (treatmentsQuery.data?.treatments ?? [])
       .filter((treatment) => (selectedCategory === "all" ? true : treatment.category === selectedCategory))
       .filter((treatment) => (onlyAvailable ? treatment.isAvailable : true))
       .filter((treatment) => (matchesDurationFilter(treatment, selectedDurations)))
@@ -139,7 +139,7 @@ export function TreatmentListingPage() {
     return <ErrorState message="Không thể tải danh sách liệu trình lúc này." />;
   }
 
-  const treatments = treatmentsQuery.data ?? [];
+  const treatments = treatmentsQuery.data?.treatments ?? [];
   const therapists = therapistsQuery.data ?? [];
   const therapistFilterItems = getTherapistFilterSummary(therapists);
 

@@ -55,7 +55,7 @@ export function CalendarWeekView({ days, bookingsByDay, displayByBookingId, onSe
                   </div>
                 ) : (
                   <div className="rounded-2xl border border-dashed border-botanical-border bg-surface-container-low px-lg py-md text-body-sm text-sage-secondary">
-                    Chưa có lịch hẹn trong ngày này. Anh Mạnh có thể dùng khoảng trống này để đặt thêm liệu trình nếu cần.
+                    Chưa có lịch hẹn trong ngày này
                   </div>
                 )}
               </div>

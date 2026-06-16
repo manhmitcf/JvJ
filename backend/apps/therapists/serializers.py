@@ -24,7 +24,7 @@ class TherapistPublicSerializer(serializers.ModelSerializer):
             "id", "full_name", "email", "phone", "avatar_url",
             "status", "years_of_experience", "specialties",
             "rating", "completed_bookings", "treatment_count",
-            "certificate_urls",
+            "certificate_urls", "bio",
         ]
         read_only_fields = fields
 

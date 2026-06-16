@@ -10,6 +10,8 @@ export type Therapist = User & {
   rating: number;
   completedBookings: number;
   certificateUrls: string[];
+  bio: string;
+  isOnline: boolean;
   citizenId?: string;
   citizenIdFrontUrl?: string;
   citizenIdBackUrl?: string;
@@ -18,4 +20,6 @@ export type Therapist = User & {
   pendingCitizenIdBackUrl?: string;
   pendingCertificateUrls?: string[];
   serviceAreas?: string[];
+  bio: string;
+  isOnline: boolean;
 };

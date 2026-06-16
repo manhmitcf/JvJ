@@ -23,12 +23,26 @@ import { formatDuration, formatPrice, formatRating } from "@/features/public/lib
 import { reviewService } from "@/services/review-service";
 import { therapistService } from "@/services/therapist-service";
 import { treatmentService } from "@/services/treatment-service";
+import { timeslotService } from "@/services/timeslot-service";
 import { ReviewList } from "@/features/reviews/components/ReviewList";
 
 const therapistAreas = ["Hải Châu", "Sơn Trà", "Thanh Khê", "Ngũ Hành Sơn"];
 const bookingPath = (therapistId: string) => `/login?redirect=${encodeURIComponent(`/app/bookings/new?therapistId=${therapistId}`)}`;
-const bookingDates = ["Hôm nay", "Ngày mai", "Cuối tuần này"];
-const timeSlots = ["09:00", "10:30", "14:00", "16:30", "19:00"];
+
+function getCurrentWeekRange(): { start: Date; end: Date } {
+  const now = new Date();
+  const start = new Date(now);
+  start.setHours(0, 0, 0, 0);
+  const end = new Date(start);
+  end.setDate(end.getDate() + 7);
+  return { start, end };
+}
+
+function formatScheduleTime(time: string): string {
+  const [hours, minutes] = time.split(":");
+  return `${hours}:${minutes}`;
+}
+
 const faqs = [
   {
     question: "Tôi có thể chọn kỹ thuật viên rồi mới chọn liệu trình không?",
@@ -86,6 +100,23 @@ export function TherapistDetailPage() {
     queryFn: () => reviewService.listReviewsByTherapist(therapistId),
   });
 
+  const scheduleQuery = useQuery({
+    queryKey: ["public", "schedule", therapistId],
+    queryFn: async () => {
+      const { start } = getCurrentWeekRange();
+      const dates: string[] = [];
+      for (let i = 0; i < 7; i++) {
+        const d = new Date(start);
+        d.setDate(d.getDate() + i);
+        dates.push(d.toISOString().split("T")[0]);
+      }
+      const slots = await Promise.all(
+        dates.map((date) => timeslotService.listTimeSlots({ therapistId, date }))
+      );
+      return slots.flat();
+    },
+  });
+
   const therapist = therapistQuery.data;
   const treatments = treatmentsQuery.data ?? [];
   const therapistReviews = useMemo(
@@ -93,11 +124,43 @@ export function TherapistDetailPage() {
     [reviewsQuery.data],
   );
 
-  if (therapistQuery.isLoading || treatmentsQuery.isLoading || reviewsQuery.isLoading) {
+  const weekSlots = scheduleQuery.data ?? [];
+
+  const weekDates = useMemo(() => {
+    const { start } = getCurrentWeekRange();
+    return Array.from({ length: 7 }, (_, i) => {
+      const d = new Date(start);
+      d.setDate(d.getDate() + i);
+      return d.toISOString().split("T")[0];
+    });
+  }, []);
+
+  const scheduleDates = useMemo(() => {
+    const slotDays = new Set(weekSlots.map((s) => s.date));
+    return weekDates.map((d) => {
+      const hasSlot = slotDays.has(d);
+      const date = new Date(d + "T00:00:00");
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const diff = Math.round((date.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+      let label = "";
+      if (diff === 0) label = "Hôm nay";
+      else if (diff === 1) label = "Ngày mai";
+      else label = new Intl.DateTimeFormat("vi-VN", { weekday: "short" }).format(date);
+      return { date: d, label, hasSlot };
+    });
+  }, [weekDates, weekSlots]);
+
+  const scheduleTimes = useMemo(() => {
+    const times = weekSlots.map((s) => formatScheduleTime(s.startTime));
+    return [...new Set(times)].sort();
+  }, [weekSlots]);
+
+  if (therapistQuery.isLoading || treatmentsQuery.isLoading || reviewsQuery.isLoading || scheduleQuery.isLoading) {
     return <LoadingSkeleton variant="card" count={1} />;
   }
 
-  if (therapistQuery.isError || treatmentsQuery.isError || reviewsQuery.isError) {
+  if (therapistQuery.isError || treatmentsQuery.isError || reviewsQuery.isError || scheduleQuery.isError) {
     return <ErrorState message="Không thể tải hồ sơ kỹ thuật viên lúc này." />;
   }
 
@@ -227,9 +290,7 @@ export function TherapistDetailPage() {
             <div className="rounded-xl border border-botanical-border bg-white p-6">
               <h2 className="mb-4 text-2xl font-semibold text-ink-primary">Về tôi</h2>
               <p className="text-base leading-7 text-sage-secondary">
-                Với hơn {therapist.yearsOfExperience} năm kinh nghiệm trong trị liệu tại nhà, {therapist.fullName} ưu tiên cách làm việc nhẹ nhàng,
-                lắng nghe phản hồi cơ thể và điều chỉnh lực phù hợp với từng khách hàng. Hồ sơ này giúp bạn xem nhanh chuyên môn,
-                kinh nghiệm và các liệu trình đang nhận trước khi quyết định đặt lịch.
+                {therapist.bio}
               </p>
 
               <h3 className="mb-3 mt-6 text-lg font-semibold text-ink-primary">Kỹ năng chuyên môn</h3>
@@ -366,14 +427,24 @@ export function TherapistDetailPage() {
                 <div>
                   <div className="mb-2 block text-xs font-bold uppercase tracking-wide text-ink-primary">Khung ngày tham khảo</div>
                   <div className="rounded-lg bg-gentle-wash px-4 py-3 text-sm leading-6 text-sage-secondary">
-                    Kỹ thuật viên thường nhận lịch vào {bookingDates.join(", ").toLowerCase()}; lịch trống cụ thể sẽ được xác nhận ở bước đặt lịch.
+                    Tuần này:{" "}
+                    {scheduleDates.map((d, i) => (
+                      <span key={d.date}>
+                        <span className={d.hasSlot ? "font-medium text-primary" : "text-muted-text"}>
+                          {d.label}
+                        </span>
+                        {i < scheduleDates.length - 1 && ", "}
+                      </span>
+                    ))}
                   </div>
                 </div>
 
                 <div>
                   <div className="mb-2 block text-xs font-bold uppercase tracking-wide text-ink-primary">Khung giờ thường nhận</div>
                   <div className="rounded-lg bg-gentle-wash px-4 py-3 text-sm leading-6 text-sage-secondary">
-                    Các khung {timeSlots.join(", ")} là mốc thường được khách hàng quan tâm; hệ thống sẽ kiểm tra lịch thực tế khi bạn tiếp tục đặt lịch.
+                    {scheduleTimes.length > 0
+                      ? `${scheduleTimes.join(", ")}`
+                      : "Chưa có khung giờ trống."}
                   </div>
                 </div>
 

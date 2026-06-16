@@ -253,7 +253,7 @@ export function AppointmentsPage() {
           </label>
         </section>
 
-        {upcomingCount > 0 && <HighlightedAppointment bookings={bookings} />}
+        {upcomingCount > 0 && bookings.length > 0 && <HighlightedAppointment bookings={bookings} />}
 
         <section className="space-y-4">
           <h2 className="mb-6 flex items-center gap-2 text-xl font-semibold text-[#181c1c]">
@@ -326,10 +326,44 @@ function SummaryCard({ icon: Icon, label, value, iconClassName }: { icon: typeof
   );
 }
 
+function getTimeUntil(targetDate: string, targetTime: string): { label: string; detail: string } {
+  const timeOnly = targetTime.split(":").slice(0, 2).join(":");
+  const target = new Date(`${targetDate}T${timeOnly}:00`);
+  const now = new Date();
+
+  const diffMs = target.getTime() - now.getTime();
+  if (diffMs < 0) {
+    return { label: "Đang thực hiện", detail: "Ca đang diễn ra" };
+  }
+
+  const diffMin = Math.floor(diffMs / 60000);
+  if (diffMin < 60) {
+    return { label: `${diffMin}p`, detail: "Kỹ thuật viên sẽ đến sau" };
+  }
+
+  const hours = Math.floor(diffMin / 60);
+  const mins = diffMin % 60;
+  return { label: `${hours}g ${mins}p`, detail: "Kỹ thuật viên sẽ đến sau" };
+}
+
+function formatFullDate(slotDate: string, slotTime: string): string {
+  const date = new Date(slotDate);
+  const day = String(date.getDate()).padStart(2, "0");
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const year = date.getFullYear();
+  const timeOnly = slotTime.substring(0, 5);
+  return `${day}/${month}/${year}, lúc ${timeOnly}`;
+}
+
 function HighlightedAppointment({ bookings }: { bookings: BookingWithDisplay[] }) {
-  const highlighted = bookings.find((booking) => booking.status === "confirmed") ?? bookings.find((booking) => booking.status === "pending");
+  const highlighted =
+    bookings.find((booking) => booking.status === "confirmed") ??
+    bookings.find((booking) => booking.status === "pending");
   if (!highlighted) return null;
+
   const display = getAppointmentDisplay(highlighted);
+  const dateTimeFull = formatFullDate(highlighted.slotDate, highlighted.slotStartTime);
+  const timeUntil = getTimeUntil(highlighted.slotDate, highlighted.slotStartTime);
 
   return (
     <section className="mb-12 overflow-hidden rounded-3xl bg-[#005c55] text-white shadow-xl shadow-[#005c55]/10 lg:flex">
@@ -342,15 +376,17 @@ function HighlightedAppointment({ bookings }: { bookings: BookingWithDisplay[] }
           <h2 className="mb-2 text-3xl font-bold">{display.title}</h2>
           <p className="mb-6 flex items-center gap-2 text-white/80">
             <Clock3 className="h-4 w-4" />
-            Hôm nay, lúc 14:00 • 01/06/2026
+            {dateTimeFull}
           </p>
           <div className="mb-8 flex items-center justify-between rounded-2xl border border-white/10 bg-white/5 p-6">
             <div>
-              <p className="mb-1 text-sm uppercase tracking-tight text-white/60">Kỹ thuật viên sẽ đến sau</p>
-              <p className="text-4xl font-bold tracking-tight">02g 15p</p>
+              <p className="mb-1 text-sm uppercase tracking-tight text-white/60">{timeUntil.detail}</p>
+              <p className="text-4xl font-bold tracking-tight">{timeUntil.label}</p>
             </div>
             <div className="flex -space-x-3">
-              <div className="flex h-14 w-14 items-center justify-center rounded-full border-2 border-[#005c55] bg-[#E6F4F1] font-bold text-[#005c55]">{display.therapistName.charAt(0)}</div>
+              <div className="flex h-14 w-14 items-center justify-center rounded-full border-2 border-[#005c55] bg-[#E6F4F1] font-bold text-[#005c55]">
+                {display.therapistName.charAt(0)}
+              </div>
               <div className="flex h-14 w-14 items-center justify-center rounded-full border-2 border-[#005c55] bg-white font-bold text-xl text-[#005c55]">TV</div>
             </div>
           </div>
@@ -370,8 +406,8 @@ function HighlightedAppointment({ bookings }: { bookings: BookingWithDisplay[] }
             </div>
           </div>
           <div className="absolute bottom-8 right-8 max-w-xs animate-bounce rounded-2xl border border-[#bdc9c6]/30 bg-white/90 p-4 shadow-xl backdrop-blur-sm">
-            <p className="mb-1 text-sm font-bold text-[#005c55]">Đang trên đường đến</p>
-            <p className="text-xs text-[#3e4947]">KTV Trần Vy đang di chuyển qua Cầu Rồng.</p>
+            <p className="mb-1 text-sm font-bold text-[#005c55]">Địa chỉ</p>
+            <p className="text-xs text-[#3e4947]">{highlighted.address}</p>
           </div>
         </div>
       </div>

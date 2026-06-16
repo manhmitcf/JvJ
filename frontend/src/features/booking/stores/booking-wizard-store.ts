@@ -24,6 +24,10 @@ type BookingWizardState = {
   selectedTreatment: Treatment | null;
   selectedTherapist: Therapist | null;
   treatments: Treatment[];
+  treatmentPage: number;
+  treatmentPageCount: number;
+  treatmentTotalCount: number;
+  treatmentSearch: string;
   therapists: Therapist[];
 
   // Step 2: Time slot
@@ -53,7 +57,7 @@ type BookingWizardState = {
 
   // Actions
   setCurrentStep: (step: BookingWizardStep) => void;
-  loadTreatments: () => Promise<void>;
+  loadTreatments: (opts?: { page?: number; search?: string }) => Promise<void>;
   loadTherapists: () => Promise<void>;
   selectTreatment: (treatment: Treatment) => void;
   selectTherapist: (therapist: Therapist) => void;
@@ -72,6 +76,10 @@ const initialState = {
   selectedTreatment: null,
   selectedTherapist: null,
   treatments: [],
+  treatmentPage: 1,
+  treatmentPageCount: 1,
+  treatmentTotalCount: 0,
+  treatmentSearch: "",
   therapists: [],
   selectedDate: null,
   selectedTimeSlot: null,
@@ -103,11 +111,22 @@ export const useBookingWizardStore = create<BookingWizardState>((set, get) => ({
     });
   },
 
-  loadTreatments: async () => {
+  loadTreatments: async (opts?: { page?: number; search?: string }) => {
     set({ isLoadingTreatments: true, error: null });
     try {
-      const treatments = await treatmentService.listTreatments();
-      set({ treatments, isLoadingTreatments: false });
+      const page = opts?.page ?? 1;
+      const result = await treatmentService.listTreatments({
+        page,
+        pageSize: 10,
+        search: opts?.search ?? get().treatmentSearch,
+      });
+      set({
+        treatments: result.treatments,
+        treatmentPage: page,
+        treatmentPageCount: result.pageCount,
+        treatmentTotalCount: result.totalCount,
+        isLoadingTreatments: false,
+      });
     } catch (error) {
       set({
         error: (error as Error).message,
