@@ -16,9 +16,10 @@ type TherapistApprovalDto = {
   pending_citizen_id_front_url?: string;
   pending_citizen_id_back_url?: string;
   pending_certificate_urls: string[];
+  credential_update_status?: "pending" | "approved" | "rejected" | "none";
 };
 
-function mapTherapistApproval(t: TherapistApprovalDto): TherapistApproval {
+function mapTherapistApproval(t: TherapistApprovalDto, isCredentialUpdate = false): TherapistApproval {
   return {
     id: t.id,
     fullName: t.user_full_name,
@@ -29,7 +30,8 @@ function mapTherapistApproval(t: TherapistApprovalDto): TherapistApproval {
     specialties: t.specialties,
     certificateUrls: t.certificate_urls,
     submittedAt: t.created_at,
-    status: t.status as TherapistApprovalStatus,
+    // Credential updates use credential_update_status; therapist applications use status
+    status: isCredentialUpdate && t.credential_update_status ? t.credential_update_status : (t.status as TherapistApprovalStatus),
     rejectionReason: t.rejection_reason || undefined,
     pendingCitizenIdFrontUrl: t.pending_citizen_id_front_url || undefined,
     pendingCitizenIdBackUrl: t.pending_citizen_id_back_url || undefined,
@@ -74,7 +76,7 @@ export async function getCredentialUpdates(status: string = "pending"): Promise<
   }
   const url = `/admin/therapists/credential-updates/${params.toString() ? `?${params}` : ""}`;
   const res = await apiClient.get<{ results: TherapistApprovalDto[] }>(url);
-  return (res.data.results ?? []).map(mapTherapistApproval);
+  return (res.data.results ?? []).map((t) => mapTherapistApproval(t, true));
 }
 
 export async function approveCredentialUpdate(therapistId: string): Promise<TherapistApproval> {

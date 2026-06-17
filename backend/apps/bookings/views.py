@@ -13,6 +13,46 @@ from .serializers import (
 )
 
 
+def _send_booking_status_notification(booking, new_status, old_status, actor=None):
+    """Explicitly send notification when booking status changes.
+    
+    This is a fallback mechanism to ensure notifications are sent even if
+    Django signals don't fire properly.
+    """
+    from apps.notifications.models import Notification
+    
+    status_type_map = {
+        "confirmed": ("booking_confirmed", f"Kỹ thuật viên đã chấp nhận lịch hẹn **{booking.code}**"),
+        "rejected": ("booking_rejected", f"Kỹ thuật viên đã từ chối lịch hẹn **{booking.code}**"),
+        "cancelled": ("booking_cancelled", f"Lịch hẹn **{booking.code}** đã bị hủy"),
+        "completed": ("booking_completed", f"Lịch hẹn **{booking.code}** hoàn thành"),
+        "in_progress": ("booking_in_progress", f"Lịch hẹn **{booking.code}** đang được thực hiện"),
+    }
+    
+    if new_status in status_type_map:
+        notification_type, title = status_type_map[new_status]
+        
+        # Notify customer
+        Notification.objects.create(
+            recipient=booking.customer,
+            notification_type=notification_type,
+            title=title,
+            message=f"Dịch vụ: {booking.treatment.name} với KTV {booking.therapist.full_name}",
+            data={"booking_id": str(booking.id), "code": booking.code},
+        )
+        
+        # Also notify therapist when booking is cancelled
+        if new_status == "cancelled":
+            actor_name = actor.full_name if actor else "khách hàng"
+            Notification.objects.create(
+                recipient=booking.therapist,
+                notification_type="booking_cancelled",
+                title=f"Lịch hẹn **{booking.code}** đã bị hủy bởi {actor_name}",
+                message=f"{actor_name} đã hủy lịch hẹn dịch vụ {booking.treatment.name}",
+                data={"booking_id": str(booking.id), "code": booking.code},
+            )
+
+
 class CustomerBookingListView(generics.ListAPIView):
     """GET /api/v1/bookings/ — List bookings của customer hiện tại."""
 
@@ -103,7 +143,11 @@ class BookingCancelView(APIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
+        old_status = booking.status
         booking.transition("cancel", "customer", request.user, reason=serializer.validated_data.get("reason", ""))
+
+        # Explicitly send notification (fallback for signal)
+        _send_booking_status_notification(booking, booking.status, old_status, actor=request.user)
 
         return Response(
             {"data": BookingDetailSerializer(booking).data},
@@ -142,6 +186,7 @@ class TherapistBookingActionView(APIView):
         serializer.is_valid(raise_exception=True)
 
         action_name = self.ACTION_MAP[action][0]
+        old_status = booking.status
 
         try:
             booking.transition(
@@ -153,6 +198,9 @@ class TherapistBookingActionView(APIView):
                 {"error": {"code": "INVALID_TRANSITION", "message": str(e)}},
                 status=status.HTTP_400_BAD_REQUEST,
             )
+
+        # Explicitly send notification (fallback for signal)
+        _send_booking_status_notification(booking, booking.status, old_status, actor=request.user)
 
         return Response(
             {"data": BookingDetailSerializer(booking).data},

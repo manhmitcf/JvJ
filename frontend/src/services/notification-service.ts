@@ -12,7 +12,9 @@ export type NotificationType =
   | "payment_failed"
   | "payment_refunded"
   | "therapist_approved"
-  | "therapist_rejected";
+  | "therapist_rejected"
+  | "therapist_new_application"
+  | "therapist_credential_update";
 
 export type NotificationDto = {
   id: string;

@@ -384,6 +384,16 @@ class AdminCredentialApproveView(APIView):
             "updated_at",
         ])
 
+        # Notify therapist that credentials were approved
+        from apps.notifications.models import Notification
+        Notification.objects.create(
+            recipient=profile.user,
+            notification_type="therapist_credentials_approved",
+            title="Giấy tờ đã được duyệt",
+            message="Admin đã duyệt giấy tờ CCCD/chứng chỉ của bạn.",
+            data={"therapist_id": str(profile.id)},
+        )
+
         return Response({"data": {"message": "Đã duyệt cập nhật giấy tờ"}})
 
 

@@ -189,6 +189,21 @@ class TherapistProfileSerializer(serializers.Serializer):
             instance.credential_update_status = "pending"
             profile_fields.append("credential_update_status")
 
+            # Notify admins about credential update request
+            from django.contrib.auth import get_user_model
+            from apps.notifications.models import Notification
+            User = get_user_model()
+            admins = User.objects.filter(role="admin", is_active=True)
+            therapist_name = getattr(instance.user, "full_name", "Unknown")
+            for admin in admins:
+                Notification.objects.create(
+                    recipient=admin,
+                    notification_type="therapist_credential_update",
+                    title=f"Yêu cầu cập nhật giấy tờ từ {therapist_name}",
+                    message=f"KTV đã gửi yêu cầu cập nhật CCCD/chứng chỉ. Cần Admin duyệt.",
+                    data={"therapist_id": str(instance.id), "user_id": str(instance.user.id)},
+                )
+
         if profile_fields:
             print(f"[SERIALIZER] Saving profile_fields={profile_fields}")
             instance.save(update_fields=profile_fields)

@@ -17,7 +17,8 @@ export function CredentialUpdateCard({
 }) {
   const hasNewCccd = Boolean(update.pendingCitizenIdFrontUrl || update.pendingCitizenIdBackUrl);
   const newCertCount = update.pendingCertificateUrls.length;
-  const isPending = update.status === "pending_approval";
+  const hasPendingCredentials = Boolean(update.pendingCitizenIdFrontUrl || update.pendingCitizenIdBackUrl || update.pendingCertificateUrls.length > 0);
+  const isPending = update.status === "pending" || (update.status === "none" && hasPendingCredentials);
   const tone = update.status === "approved" ? "green" : update.status === "rejected" ? "red" : "amber";
 
   return (

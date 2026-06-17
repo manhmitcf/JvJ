@@ -21,6 +21,8 @@ class Notification(models.Model):
         ("payment_refunded", "Payment refunded"),
         ("therapist_approved", "Therapist approved"),
         ("therapist_rejected", "Therapist rejected"),
+        ("therapist_new_application", "New therapist application"),
+        ("therapist_credential_update", "Credential update request"),
     ]
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)

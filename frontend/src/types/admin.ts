@@ -40,6 +40,7 @@ export type AdminAlert = {
 };
 
 export type TherapistApprovalStatus = "pending_approval" | "approved" | "rejected";
+export type CredentialUpdateStatus = "pending" | "approved" | "rejected" | "none";
 
 export type TherapistApproval = {
   id: string;
@@ -51,7 +52,7 @@ export type TherapistApproval = {
   specialties: string[];
   certificateUrls: string[];
   submittedAt: string;
-  status: TherapistApprovalStatus;
+  status: TherapistApprovalStatus | CredentialUpdateStatus;
   rejectionReason?: string;
   pendingCitizenIdFrontUrl?: string;
   pendingCitizenIdBackUrl?: string;

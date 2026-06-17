@@ -205,6 +205,11 @@ LOGOUT_URL = "/api/v1/auth/logout/"
 GOOGLE_CLIENT_ID = config("GOOGLE_CLIENT_ID", default="")
 GOOGLE_CLIENT_SECRET = config("GOOGLE_CLIENT_SECRET", default="")
 
+# --- Security ---
+# Disable Cross-Origin-Opener-Policy to allow OAuth popup communication with parent window
+# This is needed for Google OAuth login to work properly
+SECURE_CROSS_ORIGIN_OPENER_POLICY = None
+
 # --- Admin Registration OTP ---
 ADMIN_REGISTRATION_OTP = config("ADMIN_REGISTRATION_OTP", default="")
 

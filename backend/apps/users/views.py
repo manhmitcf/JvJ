@@ -178,6 +178,21 @@ class TherapistRegisterView(generics.CreateAPIView):
         serializer.is_valid(raise_exception=True)
         user = serializer.save()
         refresh = RefreshToken.for_user(user)
+
+        # Notify all admins about new therapist application
+        from django.contrib.auth import get_user_model
+        from apps.notifications.models import Notification
+        User = get_user_model()
+        admins = User.objects.filter(role="admin", is_active=True)
+        for admin in admins:
+            Notification.objects.create(
+                recipient=admin,
+                notification_type="therapist_new_application",
+                title=f"Đơn đăng ký KTV mới từ **{user.full_name}**",
+                message=f"Email: {user.email} — Cần Admin duyệt hồ sơ",
+                data={"user_id": str(user.id)},
+            )
+
         return Response(
             {
                 "data": {
