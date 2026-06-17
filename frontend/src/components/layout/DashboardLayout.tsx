@@ -1,8 +1,9 @@
-import { Bell, Building2, CalendarDays, ClipboardList, LayoutDashboard, LogOut, MapPin, MessageCircle, Settings, Sparkles, UserCheck, UserRound, Users, Wallet } from "lucide-react";
+import { Building2, CalendarDays, ClipboardList, LayoutDashboard, LogOut, MapPin, MessageCircle, Settings, Sparkles, UserCheck, UserRound, Users, Wallet } from "lucide-react";
 import { Link, NavLink, Outlet, useNavigate } from "react-router-dom";
 import { BrandLogo } from "@/components/brand/BrandLogo";
 import { ChatPanel } from "@/features/conversation/components/ChatPanel";
 import { useAuthStore } from "@/features/auth/auth-store";
+import { NotificationPanel } from "@/components/notifications/NotificationPanel";
 import { cn } from "@/utils/cn";
 
 const areaLabels = {
@@ -66,6 +67,7 @@ export function DashboardLayout({ area }: { area: "Customer" | "Therapist" | "Ad
               <NavLink
                 key={item.to}
                 to={item.to}
+                end
                 className={({ isActive }) =>
                   cn(
                     "flex items-center gap-sm rounded-2xl px-md py-sm text-body-sm font-bold transition-all",
@@ -111,10 +113,7 @@ export function DashboardLayout({ area }: { area: "Customer" | "Therapist" | "Ad
               <BrandLogo imageClassName="h-10 w-10" textClassName="text-lg font-black text-primary" />
             </Link>
             <div className="ml-auto flex items-center gap-md text-[#181c1c]">
-              <button className="relative rounded-full p-2 text-[#181c1c] transition-colors hover:text-primary" aria-label="Thông báo">
-                <Bell className="h-5 w-5" />
-                <span className="absolute right-2 top-1.5 h-2 w-2 rounded-full bg-red-600 ring-2 ring-[#f7faf8]" />
-              </button>
+              <NotificationPanel />
               <button className="rounded-full p-2 text-[#181c1c] transition-colors hover:text-primary" aria-label="Tin nhắn">
                 <MessageCircle className="h-5 w-5" />
               </button>

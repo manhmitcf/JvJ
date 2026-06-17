@@ -10,6 +10,7 @@ type BackendAuthUser = {
   phone: string;
   full_name: string;
   avatar_url?: string;
+  address?: string;
   role: "customer" | "therapist" | "admin";
   status?: Therapist["status"] | null;
   years_of_experience?: number | null;
@@ -76,6 +77,7 @@ function mapAuthUser(user: BackendAuthUser): AuthUser {
     fullName: user.full_name,
     email: user.email,
     phone: user.phone,
+    address: user.address || undefined,
     avatarUrl,
   };
 
@@ -152,6 +154,7 @@ export async function registerAdmin(data: RegisterAdminRequest): Promise<AuthRes
 
 export async function refreshToken(): Promise<{ access: string; refresh: string }> {
   const refresh = localStorage.getItem("refresh_token");
+
   if (!refresh) {
     throw new Error("Không tìm thấy refresh token");
   }

@@ -679,7 +679,7 @@ function AddressStep({
   const [localAddress, setLocalAddress] = useState(address || "");
   const [localPhone, setLocalPhone] = useState(contactPhone || "");
   const [localNote, setLocalNote] = useState(addressNote || "");
-  const [saveAddress, setSaveAddress] = useState(false);
+  const [saveAddress, setSaveAddress] = useState(Boolean(address || contactPhone || addressNote));
 
   const handleNext = () => {
     if (!localAddress.trim() || !localPhone.trim()) {
@@ -697,14 +697,13 @@ function AddressStep({
             <Input value={localAddress} onChange={(e) => setLocalAddress(e.target.value)} className="h-12 rounded-xl" placeholder="Nhập địa chỉ đầy đủ" />
           </Field>
           <Field label="Số điện thoại liên hệ">
-            <Input value={localPhone} onChange={(e) => setLocalPhone(e.target.value)} className="h-12 rounded-xl" placeholder="0905 123 456" />
+            <Input value={localPhone} onChange={(e) => setLocalPhone(e.target.value)} className="h-12 rounded-xl" />
           </Field>
           <Field label="Ghi chú thêm cho kỹ thuật viên">
             <textarea
               value={localNote}
               onChange={(e) => setLocalNote(e.target.value)}
               className="min-h-32 w-full rounded-xl border border-border bg-card px-md py-sm text-sm outline-none placeholder:text-muted-foreground focus:ring-2 focus:ring-primary/30"
-              placeholder="Ví dụ: Căn hộ tầng 5, vui lòng gọi trước khi đến 10 phút"
             />
           </Field>
           <label className="flex items-center gap-sm rounded-2xl border border-botanical-border bg-white p-lg text-body-sm font-semibold text-foreground">
@@ -806,50 +805,38 @@ function ConfirmStep({
 }) {
   const [agreed, setAgreed] = useState(false);
 
-  if (createdBooking) {
-    return (
-      <StepCard icon={<ShieldCheck />} title="Đặt lịch thành công" description="Booking của bạn đã được tạo và đang chờ xác nhận.">
-        <div className="rounded-3xl border border-emerald-200 bg-emerald-50 p-xl">
-          <div className="flex flex-col gap-lg sm:flex-row sm:items-center sm:justify-between">
-            <div>
-              <Badge className="mb-md border-0 bg-amber-100 text-amber-700">Chờ xác nhận</Badge>
-              <h3 className="text-2xl font-black text-ink-primary">Đã gửi yêu cầu đặt lịch</h3>
-              <p className="mt-xs text-body-sm text-on-surface-variant">JvJ sẽ xác nhận lịch hẹn và thông báo cho bạn trong thời gian sớm nhất.</p>
-              <p className="mt-sm text-sm font-black text-primary">Mã lịch hẹn: {createdBooking.code}</p>
-            </div>
-            <CheckCircle2 className="h-16 w-16 text-success-leaf" />
-          </div>
-        </div>
-        <div className="flex flex-col gap-md sm:flex-row">
-          <Button onClick={onViewBooking} className="flex-1 rounded-xl shadow-md">
-            Xem chi tiết lịch hẹn
-          </Button>
-          <Link to="/app/appointments" className="inline-flex flex-1 items-center justify-center rounded-xl border border-botanical-border bg-white px-md py-sm text-sm font-semibold transition-colors hover:bg-soft-mint">
-            Về danh sách lịch hẹn
-          </Link>
-          <Button
-            variant="secondary"
-            onClick={() => {
-              void useBookingWizardStore.getState().reset();
-              void useBookingWizardStore.getState().loadTreatments({ page: 1 });
-              void useBookingWizardStore.getState().loadTherapists();
-            }}
-            className="flex-1 rounded-xl"
-          >
-            Đặt lịch khác
-          </Button>
-        </div>
-      </StepCard>
-    );
-  }
-
   const formatDate = (date: string) => {
     const d = new Date(date);
     return d.toLocaleDateString("vi-VN", { weekday: "long", day: "2-digit", month: "2-digit", year: "numeric" });
   };
 
   return (
-    <StepCard icon={<ShieldCheck />} title="Xác nhận lịch hẹn" description="Vui lòng kiểm tra lại thông tin trước khi gửi yêu cầu đặt lịch.">
+    <StepCard icon={<ShieldCheck />} title={createdBooking ? "Đặt lịch thành công" : "Xác nhận lịch hẹn"} description={createdBooking ? "Booking của bạn đã được tạo và đang chờ xác nhận." : "Vui lòng kiểm tra lại thông tin trước khi gửi yêu cầu đặt lịch."}>
+      {createdBooking && (
+        <div className="mb-lg rounded-3xl border border-emerald-200 bg-emerald-50 p-lg">
+          <div className="flex flex-col gap-md sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <Badge className="mb-md border-0 bg-amber-100 text-amber-700">Chờ xác nhận</Badge>
+              <h3 className="text-xl font-black text-ink-primary">Đã gửi yêu cầu đặt lịch</h3>
+              <p className="mt-xs text-body-sm text-on-surface-variant">JvJ sẽ xác nhận lịch hẹn và thông báo cho bạn trong thời gian sớm nhất.</p>
+              <p className="mt-sm text-sm font-black text-primary">Mã lịch hẹn: {createdBooking.code}</p>
+            </div>
+            <CheckCircle2 className="h-16 w-16 text-success-leaf" />
+          </div>
+          <div className="mt-lg flex flex-col gap-md sm:flex-row">
+            <Button onClick={onViewBooking} className="flex-1 rounded-xl shadow-md">
+              Xem chi tiết lịch hẹn
+            </Button>
+            <Button variant="secondary" onClick={() => {
+              useBookingWizardStore.getState().reset();
+              useBookingWizardStore.getState().loadTreatments({ page: 1 });
+              useBookingWizardStore.getState().loadTherapists();
+            }} className="flex-1 rounded-xl">
+              Đặt lịch khác
+            </Button>
+          </div>
+        </div>
+      )}
       <div className="grid gap-lg md:grid-cols-2">
         <ConfirmBlock
           title="Liệu trình"
@@ -894,18 +881,22 @@ function ConfirmStep({
           <div className="text-3xl font-black text-primary">{Number(selectedTreatment?.price || 0).toLocaleString("vi-VN")}đ</div>
         </div>
       </div>
-      <label className="flex items-start gap-md rounded-2xl border border-botanical-border bg-white p-lg text-body-sm text-on-surface-variant">
-        <input type="checkbox" className="mt-1 h-4 w-4 accent-primary" checked={agreed} onChange={(e) => setAgreed(e.target.checked)} />
-        Tôi xác nhận thông tin trên là chính xác và đồng ý để JvJ liên hệ xác nhận lịch hẹn.
-      </label>
-      <div className="flex gap-md">
-        <Button variant="secondary" onClick={onBack} className="flex-1 rounded-xl">
-          <ArrowLeft className="mr-xs h-4 w-4" /> Quay lại chỉnh sửa
-        </Button>
-        <Button onClick={onCreate} disabled={!agreed || isCreating} className="flex-1 rounded-xl shadow-md">
-          {isCreating ? "Đang tạo..." : "Xác nhận đặt lịch"} <ArrowRight className="ml-xs h-4 w-4" />
-        </Button>
-      </div>
+      {!createdBooking && (
+        <>
+          <label className="flex items-start gap-md rounded-2xl border border-botanical-border bg-white p-lg text-body-sm text-on-surface-variant">
+            <input type="checkbox" className="mt-1 h-4 w-4 accent-primary" checked={agreed} onChange={(e) => setAgreed(e.target.checked)} />
+            Tôi xác nhận thông tin trên là chính xác và đồng ý để JvJ liên hệ xác nhận lịch hẹn.
+          </label>
+          <div className="flex gap-md">
+            <Button variant="secondary" onClick={onBack} className="flex-1 rounded-xl">
+              <ArrowLeft className="mr-xs h-4 w-4" /> Quay lại chỉnh sửa
+            </Button>
+            <Button onClick={onCreate} disabled={!agreed || isCreating} className="flex-1 rounded-xl shadow-md">
+              {isCreating ? "Đang tạo..." : "Xác nhận đặt lịch"} <ArrowRight className="ml-xs h-4 w-4" />
+            </Button>
+          </div>
+        </>
+      )}
     </StepCard>
   );
 }

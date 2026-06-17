@@ -9,6 +9,7 @@ import { AppointmentDetailPage } from "@/features/booking/AppointmentDetailPage"
 import { AppointmentsPage } from "@/features/booking/AppointmentsPage";
 import { BookingWizardPage } from "@/features/booking/BookingWizardPage";
 import { CalendarPage } from "@/features/customer/CalendarPage";
+import { CustomerHomePage } from "@/features/customer/pages/CustomerHomePage";
 import { ProfilePage } from "@/features/customer/ProfilePage";
 import {
   AdminBookingsPage,
@@ -72,12 +73,15 @@ export const router = createBrowserRouter([
     ),
     errorElement: <ErrorPage />,
     children: [
+      { path: "/app", element: <CustomerHomePage /> },
+      { path: "/app/treatments", element: <TreatmentListingPage /> },
+      { path: "/app/treatments/:treatmentId", element: <TreatmentDetailPage /> },
       { path: "/app/bookings/new", element: <BookingWizardPage /> },
       { path: "/app/appointments", element: <AppointmentsPage /> },
       { path: "/app/appointments/:bookingId", element: <AppointmentDetailPage /> },
       { path: "/app/payments/:bookingId", element: <CustomerPaymentPage /> },
       { path: "/app/calendar", element: <CalendarPage /> },
-{ path: "/app/profile", element: <ProfilePage /> },
+      { path: "/app/profile", element: <ProfilePage /> },
     ],
   },
   {

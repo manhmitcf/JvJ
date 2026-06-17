@@ -41,9 +41,23 @@ Write-Host "Cleaning containers..." -ForegroundColor Yellow
 docker stop jvj-backend jvj-frontend 2>$null
 docker rm jvj-backend jvj-frontend 2>$null
 
+# Remove old network if exists
+docker network rm jvj-network 2>$null
+
 # Clean dangling images
 Write-Host "Cleaning dangling images..." -ForegroundColor Yellow
 docker image prune -f 2>$null
+
+# Create shared network
+Write-Host "Creating shared Docker network..." -ForegroundColor Yellow
+docker network create --driver bridge jvj-network 2>$null
+
+# Patch VITE_API_BASE_URL in frontend source before build
+Write-Host "Patching VITE_API_BASE_URL in frontend source..." -ForegroundColor Yellow
+$frontendApiClientPath = Join-Path $PSScriptRoot "frontend\src\lib\api-client.ts"
+$apiClientContent = Get-Content $frontendApiClientPath -Raw
+$patchedContent = $apiClientContent -replace 'const API_BASE_URL = import\.meta\.env\.VITE_API_BASE_URL \|\|"[^"]*"', 'const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://host.docker.internal:8000/api/v1"'
+Set-Content -Path $frontendApiClientPath -Value $patchedContent -NoNewline
 
 Write-Host ""
 Write-Host "=== BUILDING & RUNNING BACKEND ===" -ForegroundColor Cyan
@@ -63,10 +77,11 @@ if ($LASTEXITCODE -ne 0) {
     throw "Build backend that bai"
 }
 
-# Run backend container
+# Run backend container on shared network
 Write-Host "Starting backend container..." -ForegroundColor Yellow
 docker run -d `
   --name jvj-backend `
+  --network jvj-network `
   -p 8000:8000 `
   -v "${PSScriptRoot}\media-uploads:/app/media" `
   --env-file ../.env `
@@ -86,7 +101,7 @@ Write-Host ""
 Write-Host "=== BUILDING & RUNNING FRONTEND ===" -ForegroundColor Cyan
 Push-Location (Join-Path $PSScriptRoot "frontend")
 
-# Build frontend image
+# Build frontend image (source already patched above)
 Write-Host "Building frontend image..." -ForegroundColor Yellow
 docker build -t jvj-frontend:latest .
 if ($LASTEXITCODE -ne 0) {
@@ -94,13 +109,15 @@ if ($LASTEXITCODE -ne 0) {
     throw "Build frontend that bai"
 }
 
-# Run frontend container voi volume mount cho hot reload
+# Run frontend container on shared network
+# NOTE: Do NOT pass --env-file here — .env may override VITE_API_BASE_URL.
+# The correct value is already baked into the Vite bundle via the patch above.
 Write-Host "Starting frontend container..." -ForegroundColor Yellow
 docker run -d `
   --name jvj-frontend `
+  --network jvj-network `
   -p 5173:5173 `
   -v "${PWD}\src:/app/src" `
-  --env-file ../.env `
   jvj-frontend:latest
 if ($LASTEXITCODE -ne 0) {
     Pop-Location
@@ -112,6 +129,11 @@ Write-Host "Verifying frontend..." -ForegroundColor Yellow
 Wait-ForHttpReady -Name "jvj-frontend" -Url "http://localhost:5173/" -TimeoutSeconds 45 | Out-Null
 
 Pop-Location
+
+# Restore api-client.ts to original state
+$restoredContent = $apiClientContent
+Set-Content -Path $frontendApiClientPath -Value $restoredContent -NoNewline
+Write-Host "Restored api-client.ts to original state." -ForegroundColor Gray
 
 Write-Host ""
 Write-Host "=== CONTAINERS STATUS ===" -ForegroundColor Cyan
@@ -127,6 +149,6 @@ Write-Host "  Logs:     docker logs jvj-backend -f" -ForegroundColor Gray
 Write-Host "            docker logs jvj-frontend -f" -ForegroundColor Gray
 Write-Host "  Stop:     docker stop jvj-backend jvj-frontend" -ForegroundColor Gray
 Write-Host "  Remove:   docker rm jvj-backend jvj-frontend" -ForegroundColor Gray
-Write-Host "  Restart:  docker restart jvj-backend jvj-frontend" -ForegroundColor Gray
+Write-Host "  Restart:  .\docker-run.ps1" -ForegroundColor Gray
 
 Set-Location $PSScriptRoot

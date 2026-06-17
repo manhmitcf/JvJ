@@ -17,6 +17,7 @@ class Payment(models.Model):
         ("pending", "Pending"),
         ("success", "Success"),
         ("failed", "Failed"),
+        ("refunded", "Refunded"),
     ]
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)

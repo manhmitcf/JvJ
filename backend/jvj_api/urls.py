@@ -16,6 +16,7 @@ urlpatterns = [
     path("api/v1/reviews/", include("apps.reviews.urls")),
     path("api/v1/admin/", include("apps.admin.urls")),
     path("api/v1/conversations/", include("apps.conversations.urls")),
+    path("api/v1/notifications/", include("apps.notifications.urls")),
     path("api/v1/", include("apps.common.urls")),
 ]
 

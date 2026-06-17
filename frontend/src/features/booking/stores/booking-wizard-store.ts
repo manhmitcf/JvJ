@@ -3,6 +3,7 @@ import { treatmentService } from "@/services/treatment-service";
 import { therapistService } from "@/services/therapist-service";
 import { timeslotService } from "@/services/timeslot-service";
 import { bookingService } from "@/services/booking-service";
+import { updateProfile } from "@/features/customer/services/profile-service";
 import { type Treatment } from "@/types/treatment";
 import { type Therapist } from "@/types/therapist";
 import { type TimeSlot } from "@/types/time-slot";
@@ -205,7 +206,7 @@ export const useBookingWizardStore = create<BookingWizardState>((set, get) => ({
   },
 
   createBooking: async () => {
-    const { selectedTimeSlot, selectedTreatment, selectedTherapist, address, contactPhone, addressNote, healthInfo } = get();
+    const { selectedTimeSlot, selectedTreatment, selectedTherapist, address, contactPhone, addressNote, healthInfo, saveAddress } = get();
 
     if (!selectedTimeSlot || !selectedTreatment || !selectedTherapist) {
       set({ error: "Thiếu thông tin đặt lịch" });
@@ -230,6 +231,11 @@ export const useBookingWizardStore = create<BookingWizardState>((set, get) => ({
         contact_phone: contactPhone,
         note: healthNote || undefined,
       });
+
+      // Fire-and-forget: persist address to customer profile if requested
+      if (saveAddress && address.trim()) {
+        void updateProfile({ address });
+      }
 
       set({
         createdBooking: booking,
