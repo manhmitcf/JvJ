@@ -107,7 +107,7 @@ export function DashboardLayout({ area }: { area: "Customer" | "Therapist" | "Ad
       </aside>
 
       <div className="lg:pl-[264px]">
-        <header className="border-b border-[#bdc9c6] bg-[#f7faf8] px-lg py-md shadow-sm backdrop-blur">
+        <header className="sticky top-0 z-40 border-b border-[#bdc9c6] bg-[#f7faf8]/95 px-lg py-md shadow-sm backdrop-blur">
           <div className="flex items-center justify-between gap-lg">
             <Link to="/" className="flex items-center lg:hidden">
               <BrandLogo imageClassName="h-10 w-10" textClassName="text-lg font-black text-primary" />
