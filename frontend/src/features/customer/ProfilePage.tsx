@@ -1,9 +1,10 @@
-import { useEffect, useState } from "react";
-import { Camera, CheckCircle2, Mail, Phone, User, ShieldCheck } from "lucide-react";
+import { useEffect, useState, useRef } from "react";
+import { Camera, CheckCircle2, Mail, Phone, User, ShieldCheck, Loader2 } from "lucide-react";
 import { EmptyState } from "@/components/shared/EmptyState";
 import { ErrorState } from "@/components/shared/ErrorState";
 import { LoadingSkeleton } from "@/components/shared/LoadingSkeleton";
 import { useAuthStore } from "@/features/auth/auth-store";
+import { uploadAvatar } from "@/features/auth/auth-service";
 import { StitchContainer, StitchEyebrow } from "@/features/public/components/StitchPublicPrimitives";
 import { getCurrentUser, updateProfile, type UpdateProfileInput } from "./services/profile-service";
 
@@ -88,8 +89,11 @@ export function ProfilePage() {
   const [isEditing, setIsEditing] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
+  const [avatarError, setAvatarError] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [saveSuccess, setSaveSuccess] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Load profile from API
   useEffect(() => {
@@ -123,6 +127,37 @@ export function ProfilePage() {
   function handleFieldChange(field: keyof ProfileFormData, value: string) {
     setFormData((prev) => ({ ...prev, [field]: value }));
     setSaveSuccess(false);
+  }
+
+  async function handleAvatarChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    const allowedTypes = ["image/jpeg", "image/png", "image/webp", "image/gif"];
+    if (!allowedTypes.includes(file.type)) {
+      setAvatarError("Chỉ chấp nhận ảnh JPG, PNG, WebP, GIF");
+      return;
+    }
+
+    // Validate file size (5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      setAvatarError("Ảnh quá lớn (tối đa 5MB)");
+      return;
+    }
+
+    setAvatarError(null);
+    setIsUploadingAvatar(true);
+
+    try {
+      const avatarUrl = await uploadAvatar(file);
+      setFormData((prev) => ({ ...prev, avatar_url: avatarUrl }));
+      setSaveSuccess(false);
+    } catch (err) {
+      setAvatarError((err as Error).message || "Upload avatar thất bại");
+    } finally {
+      setIsUploadingAvatar(false);
+    }
   }
 
   async function handleSave() {
@@ -278,26 +313,32 @@ export function ProfilePage() {
                 </div>
               )}
               {isEditing && (
-                <label className="absolute inset-x-0 bottom-0 cursor-pointer bg-black/40 py-xs text-center text-label-caption font-black text-white hover:bg-black/60">
-                  <Camera className="inline h-4 w-4" /> Đổi ảnh
-                  <input
-                    type="url"
-                    value={formData.avatar_url}
-                    onChange={(e) => handleFieldChange("avatar_url", e.target.value)}
-                    placeholder="URL ảnh..."
-                    className="sr-only"
-                  />
+                <label
+                  htmlFor="avatar-upload"
+                  className="absolute inset-x-0 bottom-0 flex cursor-pointer items-center justify-center gap-xs bg-black/40 py-xs text-center text-label-caption font-black text-white hover:bg-black/60"
+                >
+                  {isUploadingAvatar ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin" /> Đang tải...
+                    </>
+                  ) : (
+                    <>
+                      <Camera className="h-4 w-4" /> Đổi ảnh
+                    </>
+                  )}
                 </label>
               )}
-            </div>
-            {isEditing && (
               <input
-                type="url"
-                value={formData.avatar_url}
-                onChange={(e) => handleFieldChange("avatar_url", e.target.value)}
-                placeholder="Dán URL ảnh..."
-                className="mt-sm w-full rounded-xl border border-botanical-border bg-warm-bg px-md py-sm text-label-caption text-sage-secondary placeholder:text-muted-text"
+                ref={fileInputRef}
+                id="avatar-upload"
+                type="file"
+                accept="image/jpeg,image/png,image/webp,image/gif"
+                onChange={handleAvatarChange}
+                className="sr-only"
               />
+            </div>
+            {avatarError && (
+              <p className="mt-sm text-label-caption font-bold text-red-500">{avatarError}</p>
             )}
             <p className="mt-sm text-label-caption font-bold text-sage-secondary">Ảnh đại diện</p>
           </div>

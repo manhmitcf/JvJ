@@ -3,6 +3,7 @@ from django.urls import path
 
 from .views import (
     AdminRegisterView,
+    AvatarUploadView,
     CustomTokenRefreshView,
     CustomerRegisterView,
     GoogleLoginView,
@@ -21,4 +22,5 @@ urlpatterns = [
     path("refresh/", CustomTokenRefreshView.as_view(), name="auth-refresh"),
     path("logout/", LogoutView.as_view(), name="auth-logout"),
     path("me/", MeView.as_view(), name="auth-me"),
+    path("me/avatar/", AvatarUploadView.as_view(), name="auth-avatar"),
 ]

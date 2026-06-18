@@ -50,6 +50,9 @@ export function DashboardLayout({ area }: { area: "Customer" | "Therapist" | "Ad
   const displayName = user?.fullName ?? areaLabels[area];
   const roleLabel = user?.role === "therapist" && "status" in user ? `Therapist · ${user.status === "approved" ? "Đã duyệt" : "Chờ duyệt"}` : areaLabels[area];
   const avatarInitial = displayName.trim().charAt(0).toUpperCase();
+  const avatarUrl = user?.avatarUrl;
+  const therapistPortraitUrl = user?.role === "therapist" && "portraitUrl" in user ? (user as Therapist).portraitUrl : null;
+  const displayAvatarUrl = avatarUrl || therapistPortraitUrl;
 
   return (
     <div className="min-h-screen bg-warm-bg text-foreground">
@@ -84,9 +87,17 @@ export function DashboardLayout({ area }: { area: "Customer" | "Therapist" | "Ad
 
         <div className="mt-auto rounded-[1.75rem] border border-botanical-border bg-white p-md shadow-sm">
           <Link to={profileLinks[area]} className="flex items-center gap-sm rounded-2xl transition-colors hover:bg-soft-mint/50">
-            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-soft-mint text-base font-black text-primary">
-              {avatarInitial || <UserRound className="h-5 w-5" />}
-            </div>
+            {displayAvatarUrl ? (
+              <img
+                src={displayAvatarUrl}
+                alt={displayName}
+                className="h-11 w-11 shrink-0 rounded-2xl object-cover"
+              />
+            ) : (
+              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-soft-mint text-base font-black text-primary">
+                {avatarInitial || <UserRound className="h-5 w-5" />}
+              </div>
+            )}
             <div className="min-w-0">
               <div className="truncate text-body-sm font-black text-ink-primary">{displayName}</div>
               <div className="truncate text-label-caption font-semibold text-sage-secondary">{roleLabel}</div>

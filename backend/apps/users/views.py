@@ -1,7 +1,7 @@
 """Authentication views: Google OAuth, token refresh, logout, profile."""
 from django.conf import settings
 from django.contrib.auth import get_user_model
-from rest_framework import generics, permissions, status
+from rest_framework import generics, parsers, permissions, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
@@ -282,3 +282,70 @@ class MeView(generics.RetrieveUpdateAPIView):
         serializer.is_valid(raise_exception=True)
         serializer.save()
         return Response({"data": UserSerializer(request.user).data})
+
+
+class AvatarUploadView(APIView):
+    """POST /api/v1/auth/me/avatar/ — Upload avatar image for current user."""
+
+    permission_classes = [IsActiveUser]
+    parser_classes = [parsers.MultiPartParser]
+
+    def post(self, request):
+        user = request.user
+        avatar_file = request.FILES.get("avatar")
+
+        if not avatar_file:
+            return Response(
+                {"error": {"code": "NO_FILE", "message": "Không tìm thấy file avatar"}},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        # Validate file type
+        allowed_types = ["image/jpeg", "image/png", "image/webp", "image/gif"]
+        if avatar_file.content_type not in allowed_types:
+            return Response(
+                {"error": {"code": "INVALID_TYPE", "message": "Chỉ chấp nhận ảnh JPG, PNG, WebP, GIF"}},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        # Validate file size (max 5MB)
+        if avatar_file.size > 5 * 1024 * 1024:
+            return Response(
+                {"error": {"code": "FILE_TOO_LARGE", "message": "Ảnh quá lớn (tối đa 5MB)"}},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        # Generate unique filename: avatars/{user_id}/{uuid}.{ext}
+        import uuid
+        from pathlib import Path
+        from django.core.files.storage import default_storage
+
+        ext = Path(avatar_file.name).suffix
+        filename = f"avatars/{user.id}/{uuid.uuid4()}{ext}"
+
+        # Delete old avatar if exists (cleanup)
+        if user.avatar_url:
+            try:
+                old_path = user.avatar_url.replace(request.build_absolute_uri("/"), "").lstrip("/")
+                if default_storage.exists(old_path):
+                    default_storage.delete(old_path)
+            except Exception:
+                pass  # Ignore cleanup errors
+
+        # Save new avatar
+        saved_path = default_storage.save(filename, avatar_file)
+
+        # Build URL
+        if saved_path.startswith("/"):
+            avatar_url = request.build_absolute_uri(saved_path)
+        else:
+            avatar_url = request.build_absolute_uri(f"{settings.MEDIA_URL}{saved_path}")
+
+        # Update user
+        user.avatar_url = avatar_url
+        user.save(update_fields=["avatar_url", "updated_at"])
+
+        return Response(
+            {"data": {"avatar_url": avatar_url}},
+            status=status.HTTP_200_OK,
+        )

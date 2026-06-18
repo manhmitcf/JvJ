@@ -17,6 +17,5 @@ EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
 # DATABASES uses DATABASE_URL from .env (configured in base.py via decouple)
 # No override — Supabase connection comes from .env
 
-# Silence Docker volume warnings
-if "django.contrib.staticfiles" in INSTALLED_APPS:  # noqa: F405
-    INSTALLED_APPS.remove("django.contrib.staticfiles")  # noqa: F405
+# Media files - use local persistent folder for development
+MEDIA_ROOT = BASE_DIR / "media"  # noqa: F405

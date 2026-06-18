@@ -1,4 +1,4 @@
-import { apiClient } from "@/lib/api-client";
+import { apiFetch, apiClient } from "@/lib/api-client";
 import type { Therapist } from "@/types/therapist";
 import type { User } from "@/types/user";
 
@@ -192,6 +192,28 @@ export async function logout(): Promise<void> {
 export async function getMe(): Promise<AuthUser> {
   const result = await apiClient.get<BackendAuthUser>("/auth/me/");
   return mapAuthUser(result.data);
+}
+
+export async function uploadAvatar(file: File): Promise<string> {
+  const formData = new FormData();
+  formData.append("avatar", file);
+
+  const token = localStorage.getItem("access_token");
+  const url = `${import.meta.env.VITE_API_BASE_URL || "http://localhost:8000/api/v1"}/auth/me/avatar/`;
+
+  const response = await fetch(url, {
+    method: "POST",
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+    body: formData,
+  });
+
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({ error: { message: "Upload failed" } }));
+    throw new Error(error.error?.message || "Upload avatar thất bại");
+  }
+
+  const json = await response.json();
+  return json.data.avatar_url;
 }
 
 export async function loginAsAdmin(email: string, password: string): Promise<AuthResponse> {

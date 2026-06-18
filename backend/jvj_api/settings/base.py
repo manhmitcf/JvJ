@@ -135,7 +135,15 @@ DATABASE_URL = config(
     default="postgresql://postgres:postgres@localhost:5432/jvj_db",
 )
 DATABASES = {
-    "default": _parse_database_url(DATABASE_URL),
+    "default": {
+        **_parse_database_url(DATABASE_URL),
+        # Connection pool settings for Supabase PgBouncer
+        "CONN_MAX_AGE": 600,  # Keep connections alive for 10 minutes
+        "OPTIONS": {
+            "connect_timeout": 30,
+            "options": "statement_timeout=30000",  # 30 second query timeout
+        },
+    }
 }
 
 # --- Password validation ---
@@ -161,7 +169,8 @@ STATIC_ROOT = BASE_DIR / "staticfiles"
 
 # --- Media files (User-uploaded content) ---
 MEDIA_URL = "/media/"
-MEDIA_ROOT = Path("/app/media")  # Absolute path for Docker volume mount
+# Use a persistent local path for development; in production/Docker, this is overridden
+MEDIA_ROOT = BASE_DIR / "media"
 
 # --- Default primary key field type ---
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
