@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import {
   AlertCircle,
@@ -26,6 +26,7 @@ import { ErrorState } from "@/components/shared/ErrorState";
 import { useBookingWizardStore } from "@/features/booking/stores/booking-wizard-store";
 import { useSpaStore } from "@/features/spas/stores/spa-store";
 import { getSpaMapImage } from "@/features/spas/components/spa-assets";
+import { treatmentService } from "@/services/treatment-service";
 import { cn } from "@/utils/cn";
 import type { Treatment } from "@/types/treatment";
 import type { Therapist } from "@/types/therapist";
@@ -62,9 +63,6 @@ export function BookingWizardPage() {
     selectedTreatment,
     selectedTherapist,
     treatments,
-    treatmentPage,
-    treatmentPageCount,
-    treatmentTotalCount,
     therapists,
     selectedDate,
     selectedTimeSlot,
@@ -74,13 +72,11 @@ export function BookingWizardPage() {
     addressNote,
     healthInfo,
     createdBooking,
-    isLoadingTreatments,
     isLoadingTherapists,
     isLoadingSlots,
     isCreatingBooking,
     error,
     setCurrentStep,
-    loadTreatments,
     loadTherapists,
     selectTreatment,
     selectTherapist,
@@ -91,42 +87,88 @@ export function BookingWizardPage() {
     createBooking,
   } = useBookingWizardStore();
 
-  const [treatmentSearch, setTreatmentSearch] = useState("");
-  const searchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [resolvedTreatmentId, setResolvedTreatmentId] = useState<string | null>(null);
+  const [treatmentLinkError, setTreatmentLinkError] = useState<{ id: string; message: string } | null>(null);
 
   const { spas, loadSpas } = useSpaStore();
   const selectedSpa = useMemo(() => spas.find((spa) => spa.id === spaId && spa.status === "active") ?? null, [spas, spaId]);
 
   useEffect(() => {
-    void loadTreatments({ page: 1 });
     void loadTherapists();
     void loadSpas();
-  }, [loadTreatments, loadTherapists, loadSpas]);
+  }, [loadTherapists, loadSpas]);
 
-  // Auto-select treatment: ưu tiên treatmentId từ URL, nếu không có thì chọn đầu tiên
+  // Khi đi từ nút "Đặt lịch ngay", chọn chính xác treatment trong URL rồi bỏ qua Bước 1.
   useEffect(() => {
-    if (treatments.length > 0 && !selectedTreatment) {
-      if (treatmentId) {
-        const targetTreatment = treatments.find((t) => t.id === treatmentId);
-        if (targetTreatment) {
-          selectTreatment(targetTreatment);
-        } else {
-          selectTreatment(treatments[0]);
-        }
-      } else {
-        selectTreatment(treatments[0]);
-      }
+    if (
+      !treatmentId ||
+      therapists.length === 0 ||
+      resolvedTreatmentId === treatmentId ||
+      treatmentLinkError?.id === treatmentId
+    ) {
+      return;
     }
-  }, [treatments, selectedTreatment, selectTreatment, treatmentId]);
+
+    let isCancelled = false;
+
+    void (async () => {
+      try {
+        const listedTreatment = treatments.find((treatment) => treatment.id === treatmentId);
+        const targetTreatment = listedTreatment ?? await treatmentService.getTreatment(treatmentId);
+
+        if (isCancelled) return;
+        if (!targetTreatment) {
+          setTreatmentLinkError({ id: treatmentId, message: "Không tìm thấy liệu trình đã chọn." });
+          return;
+        }
+
+        const treatmentTherapist = therapists.find((therapist) => therapist.id === targetTreatment.therapistId);
+        if (!treatmentTherapist) {
+          setTreatmentLinkError({ id: treatmentId, message: "Kỹ thuật viên của liệu trình này hiện không khả dụng." });
+          return;
+        }
+
+        selectTreatment(targetTreatment);
+        selectTherapist(treatmentTherapist);
+        setCurrentStep(2);
+        setResolvedTreatmentId(treatmentId);
+      } catch (linkError) {
+        if (!isCancelled) {
+          setTreatmentLinkError({
+            id: treatmentId,
+            message: linkError instanceof Error ? linkError.message : "Không thể tải liệu trình đã chọn.",
+          });
+        }
+      }
+    })();
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [
+    resolvedTreatmentId,
+    selectTreatment,
+    selectTherapist,
+    setCurrentStep,
+    therapists,
+    treatmentId,
+    treatmentLinkError?.id,
+    treatments,
+  ]);
 
   useEffect(() => {
-    if (therapists.length > 0 && !selectedTherapist) {
+    if (!treatmentId && therapists.length > 0 && !selectedTherapist) {
       selectTherapist(therapists[0]);
     }
-  }, [therapists, selectedTherapist, selectTherapist]);
+  }, [therapists, selectedTherapist, selectTherapist, treatmentId]);
 
-  if (error) {
-    return <ErrorState message={error} onRetry={() => window.location.reload()} />;
+  const activeTreatmentLinkError = treatmentLinkError?.id === treatmentId ? treatmentLinkError.message : null;
+  if (error || activeTreatmentLinkError) {
+    return <ErrorState message={error ?? activeTreatmentLinkError ?? "Không thể tải trang đặt lịch."} onRetry={() => window.location.reload()} />;
+  }
+
+  if (treatmentId && resolvedTreatmentId !== treatmentId) {
+    return <LoadingState label="Đang mở liệu trình đã chọn..." />;
   }
 
   return (
@@ -159,25 +201,9 @@ export function BookingWizardPage() {
         <main className="space-y-lg">
           {currentStep === 1 ? (
             <TreatmentStep
-              treatments={treatments}
-              treatmentPage={treatmentPage}
-              treatmentPageCount={treatmentPageCount}
-              treatmentTotalCount={treatmentTotalCount}
-              treatmentSearch={treatmentSearch}
-              therapists={therapists}
               selectedTreatment={selectedTreatment}
               selectedTherapist={selectedTherapist}
-              isLoading={isLoadingTreatments || isLoadingTherapists}
-              onSelectTreatment={selectTreatment}
-              onSelectTherapist={selectTherapist}
-              onSearchChange={(q) => {
-                setTreatmentSearch(q);
-                if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current);
-                searchTimeoutRef.current = setTimeout(() => {
-                  void loadTreatments({ page: 1, search: q });
-                }, 350);
-              }}
-              onPageChange={(page) => void loadTreatments({ page })}
+              isLoading={isLoadingTherapists}
               onNext={() => setCurrentStep(2)}
             />
           ) : null}
@@ -316,135 +342,43 @@ function Stepper({
 }
 
 function TreatmentStep({
-  treatments,
-  treatmentPage,
-  treatmentPageCount,
-  treatmentTotalCount,
-  treatmentSearch,
-  therapists,
   selectedTreatment,
   selectedTherapist,
   isLoading,
-  onSelectTreatment,
-  onSelectTherapist,
-  onSearchChange,
-  onPageChange,
   onNext,
 }: {
-  treatments: Treatment[];
-  treatmentPage: number;
-  treatmentPageCount: number;
-  treatmentTotalCount: number;
-  treatmentSearch: string;
-  therapists: Therapist[];
   selectedTreatment: Treatment | null;
   selectedTherapist: Therapist | null;
   isLoading: boolean;
-  onSelectTreatment: (treatment: Treatment) => void;
-  onSelectTherapist: (therapist: Therapist) => void;
-  onSearchChange: (query: string) => void;
-  onPageChange: (page: number) => void;
   onNext: () => void;
 }) {
   if (isLoading) {
-    return <LoadingState message="Đang tải liệu trình và kỹ thuật viên..." />;
+    return <LoadingState label="Đang tải liệu trình và kỹ thuật viên..." />;
   }
 
   if (!selectedTreatment || !selectedTherapist) {
-    return <ErrorState message="Không tìm thấy liệu trình hoặc kỹ thuật viên khả dụng" />;
+    return (
+      <StepCard
+        icon={<Sparkles />}
+        title="Chưa chọn liệu trình"
+        description="Hãy chọn liệu trình phù hợp trước khi tiếp tục đặt lịch."
+      >
+        <Link
+          to="/treatments"
+          className="inline-flex h-11 items-center justify-center rounded-xl bg-primary px-lg text-sm font-bold text-primary-foreground shadow-md transition-colors hover:bg-primary/90"
+        >
+          Chọn liệu trình
+        </Link>
+      </StepCard>
+    );
   }
 
   return (
     <StepCard
       icon={<Sparkles />}
-      title="Chọn liệu trình"
-      description="Chọn liệu trình và kỹ thuật viên phù hợp với nhu cầu của bạn."
+      title="Liệu trình đã chọn"
+      description="Kiểm tra lại liệu trình và kỹ thuật viên trước khi chọn thời gian."
     >
-      {/* Danh sách treatments */}
-      <div>
-        <h3 className="mb-md text-sm font-black text-ink-primary">Chọn liệu trình</h3>
-        <div className="mb-md flex items-center gap-md">
-          <Input
-            value={treatmentSearch}
-            onChange={(e) => onSearchChange(e.target.value)}
-            placeholder="Tìm kiếm liệu trình..."
-            className="h-10 max-w-sm rounded-xl"
-          />
-          <span className="text-label-caption text-sage-secondary">{treatmentTotalCount} liệu trình</span>
-        </div>
-        {treatments.length === 0 && !isLoading && (
-          <div className="rounded-2xl border border-botanical-border bg-white p-lg text-center text-body-sm text-sage-secondary">
-            Không tìm thấy liệu trình nào phù hợp.
-          </div>
-        )}
-        {treatments.length > 0 && (
-          <div className="grid gap-md sm:grid-cols-2">
-            {treatments.map((treatment) => (
-              <button
-                key={treatment.id}
-                type="button"
-                onClick={() => onSelectTreatment(treatment)}
-                className={cn(
-                  "rounded-2xl border p-md text-left transition-all",
-                  selectedTreatment?.id === treatment.id
-                    ? "border-primary bg-soft-mint shadow-sm"
-                    : "border-botanical-border bg-white hover:border-primary hover:bg-soft-mint/40"
-                )}
-              >
-                <div className="flex items-start gap-md">
-                  {treatment.imageUrl ? (
-                    <img src={treatment.imageUrl} alt={treatment.name} className="h-16 w-16 rounded-xl object-cover" />
-                  ) : (
-                    <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-xl bg-gentle-wash">
-                      <Sparkles className="h-6 w-6 text-sage-secondary" />
-                    </div>
-                  )}
-                  <div className="flex-1">
-                    <h4 className="font-black text-ink-primary">{treatment.name}</h4>
-                    <p className="mt-xs text-body-sm text-sage-secondary line-clamp-2">{treatment.description}</p>
-                    <div className="mt-sm flex flex-wrap items-center gap-md text-label-caption text-on-surface-variant">
-                      <Badge className="border-0 bg-gentle-wash text-sage-secondary">{treatment.category}</Badge>
-                      <span>{treatment.durationMinutes} phut</span>
-                      <span>*</span>
-                      <span className="font-semibold text-primary">{Number(treatment.price).toLocaleString("vi-VN")}d</span>
-                    </div>
-                  </div>
-                  {selectedTreatment?.id === treatment.id && (
-                    <CheckCircle2 className="h-5 w-5 shrink-0 text-primary" />
-                  )}
-                </div>
-              </button>
-            ))}
-          </div>
-        )}
-        {treatmentPageCount > 1 && (
-          <div className="mt-lg flex items-center justify-center gap-sm">
-            <Button
-              variant="secondary"
-              size="sm"
-              onClick={() => onPageChange(treatmentPage - 1)}
-              disabled={treatmentPage <= 1}
-              className="h-8 rounded-lg px-md text-sm"
-            >
-              Prev
-            </Button>
-            <span className="text-label-caption text-sage-secondary">
-              Trang {treatmentPage} / {treatmentPageCount}
-            </span>
-            <Button
-              variant="secondary"
-              size="sm"
-              onClick={() => onPageChange(treatmentPage + 1)}
-              disabled={treatmentPage >= treatmentPageCount}
-              className="h-8 rounded-lg px-md text-sm"
-            >
-              Next
-            </Button>
-          </div>
-        )}
-      </div>
-
-      {/* Chi tiết treatment đã chọn */}
       <div className="grid gap-lg xl:grid-cols-[1.05fr_0.95fr]">
         <div className="overflow-hidden rounded-3xl border border-botanical-border bg-surface-container-lowest">
           {selectedTreatment.imageUrl ? (
@@ -497,7 +431,17 @@ function TreatmentStep({
           </div>
         </div>
       </div>
-      <StepActions nextLabel="Tiếp tục chọn thời gian" onNext={onNext} backLabel="Quay lại chi tiết liệu trình" />
+      <div className="flex flex-col gap-md sm:flex-row">
+        <Link
+          to="/treatments"
+          className="inline-flex h-10 flex-1 items-center justify-center rounded-xl bg-muted px-4 py-2 text-sm font-medium text-foreground transition-colors hover:bg-muted/80"
+        >
+          <ArrowLeft className="mr-xs h-4 w-4" /> Đổi liệu trình
+        </Link>
+        <Button onClick={onNext} className="flex-1 rounded-xl shadow-md">
+          Tiếp tục chọn thời gian <ArrowRight className="ml-xs h-4 w-4" />
+        </Button>
+      </div>
     </StepCard>
   );
 }
@@ -840,7 +784,7 @@ function ConfirmStep({
       <div className="grid gap-lg md:grid-cols-2">
         <ConfirmBlock
           title="Liệu trình"
-          items={[selectedTreatment?.name || "Chưa chọn", `${selectedTreatment?.durationMinutes} phút` || "", `${Number(selectedTreatment?.price || 0).toLocaleString("vi-VN")}đ`]}
+          items={[selectedTreatment?.name || "Chưa chọn", selectedTreatment ? `${selectedTreatment.durationMinutes} phút` : "", `${Number(selectedTreatment?.price || 0).toLocaleString("vi-VN")}đ`]}
         />
         <ConfirmBlock
           title="Kỹ thuật viên"

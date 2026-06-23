@@ -75,6 +75,8 @@ docker run -d \
   --name jvj-frontend \
   -p 5173:5173 \
   -v "$(pwd)/src:/app/src" \
+  --env-file ../.env \
+  -e VITE_ENV_DIR=. \
   jvj-frontend:latest
 
 echo "Waiting for frontend to start..."

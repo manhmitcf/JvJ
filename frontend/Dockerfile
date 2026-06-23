@@ -3,7 +3,8 @@ FROM node:20-alpine
 WORKDIR /app
 
 # Enable polling cho file watching trong Docker (cần cho hot reload)
-ENV CHOKIDAR_USEPOLLING=true
+ENV CHOKIDAR_USEPOLLING=true \
+    VITE_ENV_DIR=.
 
 # Copy package files trước để tận dụng Docker layer cache
 COPY package.json package-lock.json ./

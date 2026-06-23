@@ -18,7 +18,6 @@ import {
   AdminSpasPage,
   AdminSpaDetailPage,
   AdminTherapistApprovalsPage,
-  AdminTherapistProfilePage,
   AdminUsersPage,
 } from "@/features/admin/pages/AdminPages";
 import { AdminLoginPage } from "@/features/admin/pages/AdminLoginPage";
@@ -153,7 +152,7 @@ export const router = createBrowserRouter([
   },
   {
     element: (
-      <RequireRole allowedRoles={["admin"]}>
+      <RequireRole allowedRoles={["admin"]} unauthenticatedRedirectTo="/admin/login">
         <DashboardLayout area="Admin" />
       </RequireRole>
     ),

@@ -150,7 +150,13 @@ export const useBookingWizardStore = create<BookingWizardState>((set, get) => ({
   },
 
   selectTreatment: (treatment) => {
-    set({ selectedTreatment: treatment, selectedTimeSlot: null });
+    set({
+      selectedTreatment: treatment,
+      selectedDate: null,
+      selectedTimeSlot: null,
+      availableSlots: [],
+      createdBooking: null,
+    });
     // Auto-select the therapist who owns this treatment
     const { therapists } = get();
     const owningTherapist = therapists.find((t) => t.id === treatment.therapistId);
@@ -160,7 +166,13 @@ export const useBookingWizardStore = create<BookingWizardState>((set, get) => ({
   },
 
   selectTherapist: (therapist) => {
-    set({ selectedTherapist: therapist, selectedTimeSlot: null });
+    set({
+      selectedTherapist: therapist,
+      selectedDate: null,
+      selectedTimeSlot: null,
+      availableSlots: [],
+      createdBooking: null,
+    });
   },
 
   loadAvailableSlots: async (date) => {

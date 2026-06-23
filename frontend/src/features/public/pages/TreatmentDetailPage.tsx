@@ -150,7 +150,7 @@ export function TreatmentDetailPage() {
   const therapist = therapistQuery.data;
   const treatmentReviews = reviewsQuery.data ?? [];
   const relatedTreatments = useMemo(() => {
-    const treatments = relatedTreatmentsQuery.data ?? [];
+    const treatments = relatedTreatmentsQuery.data?.treatments ?? [];
     if (!treatment) return [];
 
     const sameCategory = treatments.filter((item) => item.id !== treatment.id && item.category === treatment.category);
@@ -289,10 +289,6 @@ export function TreatmentDetailPage() {
                 <InfoRow label="Trạng thái" value={treatment.isAvailable ? "Đang hoạt động" : "Tạm ngưng"} />
               </div>
 
-              <Link to={bookingPath} className="mb-md mt-xl inline-flex w-full items-center justify-center rounded-xl bg-primary px-xl py-lg text-h3 font-black text-on-primary shadow-lg transition-all hover:bg-primary-hover active:scale-[0.98]">
-                Đặt lịch ngay
-              </Link>
-              <p className="text-center text-label-caption text-sage-secondary">Bạn sẽ chưa bị trừ tiền ở bước này</p>
             </div>
 
             <div className="rounded-3xl border border-botanical-border bg-surface-container-low p-xl">

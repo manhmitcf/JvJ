@@ -1,7 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
-import { CalendarDays, ClipboardList, Star, Sparkles } from "lucide-react";
+import { CalendarDays, ClipboardList, Star } from "lucide-react";
 import { Link } from "react-router-dom";
-import { Badge } from "@/components/ui/badge";
 import { treatmentService } from "@/services/treatment-service";
 
 export function CustomerHomePage() {
@@ -76,7 +75,7 @@ export function CustomerHomePage() {
           <p className="text-sage-secondary">Không tải được liệu trình nổi bật.</p>
         ) : (
           <div className="grid gap-md md:grid-cols-3">
-            {treatmentsQuery.data?.slice(0, 3).map((treatment) => (
+            {treatmentsQuery.data?.treatments.slice(0, 3).map((treatment) => (
               <Link
                 key={treatment.id}
                 to={`/treatments/${treatment.id}`}
